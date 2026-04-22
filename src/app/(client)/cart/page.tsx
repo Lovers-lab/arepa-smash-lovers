@@ -82,7 +82,7 @@ export default function CartPage() {
     <div style={{ minHeight:'100dvh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'16px', padding:'24px', background:'#F7F8FA', fontFamily:'var(--font-body)' }}>
       <span style={{ fontSize:'56px' }}>🛒</span>
       <p style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'18px', color:'#374151' }}>Tu carrito está vacío</p>
-      <button onClick={() => router.push('/menu')} style={{ padding:'14px 32px', borderRadius:'999px', border:'none', background:brandColor, color:'white', fontFamily:'var(--font-display)', fontWeight:700, fontSize:'15px', cursor:'pointer', boxShadow:`0 4px 16px ${brandColor}40` }}>
+      <button onClick={() => router.push('/menu')} style={{ padding:'14px 32px', borderRadius:'999px', border:'none', background:brandColor, color:'white', fontFamily:'var(--font-display)', fontWeight:700, fontSize:'15px', cursor:'pointer' }}>
         Ver menú
       </button>
     </div>
@@ -92,7 +92,6 @@ export default function CartPage() {
     <div style={{ minHeight:'100dvh', background:'#F7F8FA', paddingBottom:'120px', fontFamily:'var(--font-body)' }}>
       <style>{`@keyframes ripple-anim{to{transform:scale(4);opacity:0}} .md-ripple{position:relative;overflow:hidden;}`}</style>
 
-      {/* Header */}
       <header style={{ position:'sticky', top:0, zIndex:30, background:'white', borderBottom:'1px solid #E4E6EA', boxShadow:'0 1px 8px rgba(0,0,0,0.06)' }}>
         <div style={{ maxWidth:'520px', margin:'0 auto', padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px' }}>
           <button onClick={() => router.back()} className="md-ripple"
@@ -106,7 +105,6 @@ export default function CartPage() {
 
       <main style={{ maxWidth:'520px', margin:'0 auto', padding:'16px' }}>
 
-        {/* Items */}
         <div style={{ background:'white', borderRadius:'20px', border:'1px solid #E4E6EA', overflow:'hidden', marginBottom:'12px', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
           {items.map((item, idx) => (
             <div key={item.product.id} style={{ padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px', borderBottom: idx < items.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
@@ -117,9 +115,7 @@ export default function CartPage() {
               <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'14px', color:'#0D0F12', margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.product.nombre}</p>
                 {item.modifiers && item.modifiers.length > 0 && (
-                  <p style={{ fontSize:'11px', color:'#9CA3AF', margin:'0 0 4px' }}>
-                    {item.modifiers.map(m => m.optionNombre).join(' · ')}
-                  </p>
+                  <p style={{ fontSize:'11px', color:'#9CA3AF', margin:'0 0 4px' }}>{item.modifiers.map((m: any) => m.optionNombre).join(' · ')}</p>
                 )}
                 <p style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'14px', color:brandColor, margin:0 }}>{formatRD(item.product.precio + (item.totalExtras || 0))}</p>
               </div>
@@ -134,18 +130,16 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* Gift banner */}
         {hasGift && (
           <div style={{ background:'linear-gradient(135deg, #FFFBEB, #FEF3C7)', border:'1px solid #FDE68A', borderRadius:'16px', padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px', marginBottom:'12px' }}>
             <span style={{ fontSize:'28px' }}>🎁</span>
             <div>
-              <p style={{ fontWeight:800, fontSize:'14px', color:'#92400E', margin:'0 0 2px' }}>{giftNombre} activado</p>
+              <p style={{ fontWeight:800, fontSize:'14px', color:'#92400E', margin:'0 0 2px' }}>{giftNombre}</p>
               <p style={{ fontSize:'12px', color:'#B45309', margin:0 }}>Se agrega automáticamente con tu primer plato fuerte</p>
             </div>
           </div>
         )}
 
-        {/* Loyalty */}
         {loyaltySaldo > 0 && (
           <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E4E6EA', padding:'16px', marginBottom:'12px' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -169,7 +163,6 @@ export default function CartPage() {
           </div>
         )}
 
-        {/* Summary */}
         <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E4E6EA', padding:'16px', marginBottom:'12px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', fontSize:'14px', color:'#6B7280', marginBottom:'8px' }}>
             <span>Subtotal</span><span>{formatRD(subtotal)}</span>
@@ -197,7 +190,6 @@ export default function CartPage() {
         </div>
       </main>
 
-      {/* Checkout FAB */}
       <div style={{ position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)', zIndex:40, width:'100%', maxWidth:'520px', padding:'0 16px' }}>
         <button onClick={() => router.push('/checkout')} className="md-ripple"
           style={{ width:'100%', padding:'18px 24px', borderRadius:'20px', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, boxShadow:`0 8px 32px ${brandColor}50`, position:'relative' }}>
