@@ -215,27 +215,56 @@ export default function CheckoutPage() {
 
         {step === 'direccion' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
-              <h2 className="font-black text-base" style={{ fontFamily:'Syne,serif' }}>📍 Dirección de entrega</h2>
-              <textarea placeholder="Ej: Ensanche La Paz, Calle 5 #32, Apt 3B, frente al parque" value={direccion}
-                onChange={e => setDireccion(e.target.value)} rows={3}
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-gray-900 transition-colors text-sm resize-none" />
-              <button onClick={requestGPS} disabled={gpsLoading}
-                className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl border-2 transition-colors"
-                style={{ borderColor: brandColor, color: brandColor }}>
-                {gpsLoading ? '⏳ Verificando...' : '📍 Verificar mi ubicación GPS'}
-              </button>
-              {gpsStatus === 'fail' && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">⚠️ Fuera de zona. Escribe tu dirección completa y verificamos.</div>}
-              {gpsStatus === 'ok' && <p className="text-green-600 text-sm font-semibold">✓ Dentro de zona de entrega</p>}
+            <div className="bg-white rounded-2xl border border-gray-100 p-4">
+              <h2 className="font-black text-base mb-4" style={{ fontFamily:'var(--font-display)' }}>📍 Dirección de entrega</h2>
+              {deliveryZone ? (
+                <MapPicker
+                  brandColor={brandColor}
+                  zonaPoligono={deliveryZone.poligono}
+                  precioEnvio={deliveryZone.precio_envio}
+                  envioGratisUmbral={deliveryZone.envio_gratis_umbral}
+                  subtotal={subtotal}
+                  onLocationSelected={(lat, lng, address) => {
+                    setDeliveryLat(lat)
+                    setDeliveryLng(lng)
+                    setDeliveryAddress(address)
+                    setDireccion(address)
+                    const polygon = deliveryZone.poligono || []
+                    if (polygon.length >= 3) {
+                      let inside = false
+                      const x = lng, y = lat
+                      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                        const xi = polygon[i].lng, yi = polygon[i].lat
+                        const xj = polygon[j].lng, yj = polygon[j].lat
+                        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+                        if (intersect) inside = !inside
+                      }
+                      setInDeliveryZone(inside)
+                    } else {
+                      setInDeliveryZone(true)
+                    }
+                  }}
+                />
+              ) : (
+                <div>
+                  <textarea placeholder="Ej: Piantini, Calle Wenceslao Alvarez #32, Apt 3B" value={direccion}
+                    onChange={e => setDireccion(e.target.value)} rows={3}
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none text-sm resize-none" />
+                </div>
+              )}
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-2">
               <label className="text-sm font-semibold text-gray-700">📝 Instrucciones especiales (opcional)</label>
               <textarea placeholder="Sin picante, timbrar al llegar..." value={notasCliente}
                 onChange={e => setNotasCliente(e.target.value)} rows={2}
-                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-gray-900 text-sm resize-none transition-colors" />
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none text-sm resize-none" />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button onClick={() => { if (direccion.trim().length < 10) { setError('Escribe una dirección más detallada'); return }; setError(''); setStep('pago') }}
+            <button onClick={() => {
+                if (!deliveryLat && direccion.trim().length < 10) { setError('Coloca tu ubicación en el mapa'); return }
+                if (inDeliveryZone === false) { setError('Lo sentimos, no llegamos a tu zona'); return }
+                setError(''); setStep('pago')
+              }}
               className="w-full py-4 rounded-xl text-white font-bold transition-all" style={{ background: brandColor }}>
               Continuar →
             </button>
