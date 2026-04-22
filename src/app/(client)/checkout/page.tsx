@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
+import BankSelector from '@/components/forms/BankSelector'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Marca, CartItem } from '@/types'
