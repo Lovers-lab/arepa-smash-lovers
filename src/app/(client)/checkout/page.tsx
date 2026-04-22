@@ -2,7 +2,6 @@
 
 export const dynamic = 'force-dynamic'
 
-import BankSelector from '@/components/forms/BankSelector'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Marca, CartItem } from '@/types'
@@ -39,6 +38,11 @@ export default function CheckoutPage() {
   const [metodosActivos, setMetodosActivos] = useState({ tarjeta: true, transferencia: true })
   const [comprobante, setComprobante] = useState<File | null>(null)
   const [selectedBank, setSelectedBank] = useState<any>(null)
+  const [deliveryLat, setDeliveryLat] = useState<number | null>(null)
+  const [deliveryLng, setDeliveryLng] = useState<number | null>(null)
+  const [deliveryAddress, setDeliveryAddress] = useState('')
+  const [inDeliveryZone, setInDeliveryZone] = useState<boolean | null>(null)
+  const [deliveryZone, setDeliveryZone] = useState<any>(null)
   const [comprobantePreview, setComprobantePreview] = useState('')
 
   const [cardNombre, setCardNombre] = useState('')
@@ -82,6 +86,10 @@ export default function CheckoutPage() {
     const res = await fetch(`/api/settings/bank?marca=${m}`)
     const data = await res.json()
     if (data.bankInfo) setBankInfo(data.bankInfo)
+
+    // Load delivery zone
+    const { data: zoneData } = await supabase.from('delivery_zones').select('*').eq('activo', true).single()
+    if (zoneData) setDeliveryZone(zoneData)
     if (data.metodoPagoActivo) setMetodosActivos(data.metodoPagoActivo)
   }
 
@@ -328,6 +336,8 @@ export default function CheckoutPage() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <button onClick={() => {
               if (!metodoPago) { setError('Selecciona un método de pago'); return }
+              if (!deliveryLat || !deliveryLng) { setError('Coloca tu ubicación en el mapa'); return }
+              if (inDeliveryZone === false) { setError('Lo sentimos, no llegamos a tu zona'); return }
               if (metodoPago === 'TRANSFERENCIA' && !selectedBank) { setError('Selecciona un banco'); return }
               if (metodoPago === 'TRANSFERENCIA' && !comprobante) { setError('Sube el comprobante de transferencia'); return }
               if (metodoPago === 'TARJETA' && !validateCard()) return
