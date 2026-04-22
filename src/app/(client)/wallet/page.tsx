@@ -86,7 +86,7 @@ export default function WalletPage() {
     setTimeout(() => setCopied(null), 2000)
   }
 
-  const brandLogo = localStorage.getItem('lovers_marca') === 'SMASH' ? '/logos/logo-smash.png' : '/logos/logo-arepa.png'
+  const brandLogo = marca === 'SMASH' ? '/logos/logo-smash.png' : '/logos/logo-arepa.png'
 
   if (loading) return (
     <div style={{ minHeight:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F7F8FA' }}>
