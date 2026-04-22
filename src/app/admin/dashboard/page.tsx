@@ -29,16 +29,34 @@ function timeAgo(ts: string) {
 function playAlert() {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
-    ;[0, 0.15, 0.3].forEach(t => {
-      const o = ctx.createOscillator(), g = ctx.createGain()
-      o.connect(g); g.connect(ctx.destination)
-      o.frequency.value = 880; o.type = 'sine'
-      g.gain.setValueAtTime(0, ctx.currentTime + t)
-      g.gain.linearRampToValueAtTime(0.4, ctx.currentTime + t + 0.05)
-      g.gain.linearRampToValueAtTime(0, ctx.currentTime + t + 0.15)
-      o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.2)
+    // Loud cash register / ding dong sound
+    const sequence = [
+      { freq: 1047, start: 0,    dur: 0.15, vol: 1.0 },  // C6
+      { freq: 1319, start: 0.18, dur: 0.15, vol: 1.0 },  // E6
+      { freq: 1568, start: 0.36, dur: 0.25, vol: 1.0 },  // G6
+      { freq: 2093, start: 0.64, dur: 0.35, vol: 0.9 },  // C7
+    ]
+    sequence.forEach(({ freq, start, dur, vol }) => {
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      const dist = ctx.createWaveShaper()
+      // Distortion for more presence
+      const curve = new Float32Array(256)
+      for (let i = 0; i < 256; i++) {
+        const x = (i * 2) / 256 - 1
+        curve[i] = (Math.PI + 200) * x / (Math.PI + 200 * Math.abs(x))
+      }
+      dist.curve = curve
+      o.connect(dist); dist.connect(g); g.connect(ctx.destination)
+      o.type = 'square'
+      o.frequency.value = freq
+      g.gain.setValueAtTime(0, ctx.currentTime + start)
+      g.gain.linearRampToValueAtTime(vol, ctx.currentTime + start + 0.02)
+      g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + start + dur)
+      o.start(ctx.currentTime + start)
+      o.stop(ctx.currentTime + start + dur + 0.05)
     })
-  } catch {}
+  } catch(e) { console.log('Sound error:', e) }
 }
 
 function ripple(e: React.MouseEvent<HTMLButtonElement>, c = 'rgba(255,255,255,0.4)') {
@@ -441,4 +459,3 @@ ${'═'.repeat(32)}
     </div>
   )
 }
-// v1776889528
