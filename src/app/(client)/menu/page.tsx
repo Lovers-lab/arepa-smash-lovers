@@ -1,10 +1,13 @@
 'use client'
+
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Product, Category, CartItem, Marca } from '@/types'
+import type { SelectedModifier } from '@/types/modifiers'
+import ModifierModal from '@/components/menu/ModifierModal'
 
 type Cart = { items: CartItem[]; marca: Marca }
 
@@ -25,6 +28,7 @@ export default function MenuPage() {
   const [loyaltySaldo, setLoyaltySaldo] = useState(0)
   const [loading, setLoading] = useState(true)
   const [brandColors, setBrandColors] = useState({ primary: '#C41E3A', secondary: '#E63946' })
+  const [modifierProduct, setModifierProduct] = useState<Product | null>(null)
 
   useEffect(() => {
     const storedUser = localStorage.getItem('lovers_user')
@@ -115,12 +119,14 @@ export default function MenuPage() {
     return () => { supabase.removeChannel(channel) }
   }, [marca])
 
-  function addToCart(product: Product) {
+  function addToCart(product: Product, modifiers: SelectedModifier[] = [], totalExtras: number = 0) {
     setCart(prev => {
-      const existing = prev.items.find(i => i.product.id === product.id)
+      // If product has modifiers, always add as new line item
+      const hasModifiers = modifiers.length > 0
+      const existing = !hasModifiers ? prev.items.find(i => i.product.id === product.id && !i.modifiers?.length) : null
       const items = existing
-        ? prev.items.map(i => i.product.id === product.id ? { ...i, cantidad: i.cantidad + 1 } : i)
-        : [...prev.items, { product, cantidad: 1 }]
+        ? prev.items.map(i => i.product.id === product.id && !i.modifiers?.length ? { ...i, cantidad: i.cantidad + 1 } : i)
+        : [...prev.items, { product, cantidad: 1, modifiers, totalExtras }]
       const updated: Cart = { marca, items }
       localStorage.setItem('lovers_cart', JSON.stringify(updated))
       return updated
@@ -235,14 +241,14 @@ export default function MenuPage() {
                                 >−</button>
                                 <span className="font-bold text-sm w-4 text-center">{inCart.cantidad}</span>
                                 <button
-                                  onClick={() => addToCart(product)}
+                                  onClick={() => setModifierProduct(product)}
                                   className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-lg"
                                   style={{ background: brandColors.primary }}
                                 >+</button>
                               </div>
                             ) : (
                               <button
-                                onClick={() => addToCart(product)}
+                                onClick={() => setModifierProduct(product)}
                                 className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-lg transition-transform hover:scale-110"
                                 style={{ background: brandColors.primary }}
                               >+</button>
@@ -257,6 +263,19 @@ export default function MenuPage() {
             )
           })}
       </main>
+
+      {/* Modifier Modal */}
+      {modifierProduct && (
+        <ModifierModal
+          product={modifierProduct}
+          brandColor={brandColors.primary}
+          onConfirm={(modifiers, totalExtras) => {
+            addToCart(modifierProduct, modifiers, totalExtras)
+            setModifierProduct(null)
+          }}
+          onClose={() => setModifierProduct(null)}
+        />
+      )}
 
       {/* Floating cart button */}
       {cartCount > 0 && (

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Product, Category, Marca } from '@/types'
+import ModifierManager from '@/components/menu/ModifierManager'
 
 const supabase = createClient()
 
@@ -34,6 +35,7 @@ export default function AdminProductsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [modifierProduct, setModifierProduct] = useState<Product | null>(null)
 
   useEffect(() => { load(marcaFilter) }, [marcaFilter])
 
@@ -255,6 +257,7 @@ export default function AdminProductsPage() {
                     {product.activo ? 'ON' : 'OFF'}
                   </button>
                   <button onClick={() => openEditProduct(product)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs hover:bg-blue-100 transition-colors">✏️ Editar</button>
+                  <button onClick={() => setModifierProduct(product)} className="p-1.5 bg-purple-50 text-purple-600 rounded-lg text-xs hover:bg-purple-100 transition-colors">🎛️ Opciones</button>
                   <button onClick={() => deleteProduct(product)} className="p-1.5 bg-red-50 text-red-500 rounded-lg text-xs hover:bg-red-100 transition-colors">🗑</button>
                 </div>
               </div>
@@ -344,6 +347,16 @@ export default function AdminProductsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODIFIER MANAGER */}
+      {modifierProduct && (
+        <ModifierManager
+          productId={modifierProduct.id}
+          productName={modifierProduct.nombre}
+          brandColor={brandColor}
+          onClose={() => setModifierProduct(null)}
+        />
       )}
 
       {/* CATEGORY FORM MODAL */}
