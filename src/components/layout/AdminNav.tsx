@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: '/admin/delivery-zones',         icon: '📍', label: 'Zonas' },
   { href: '/admin/reminders',              icon: '📅', label: 'Pagos' },
   { href: '/admin/settings',               icon: '⚙️', label: 'Config' },
+  { href: '/admin/settings/banks',          icon: '🏦', label: 'Bancos' },
   { href: '/admin/settings/users',         icon: '👥', label: 'Usuarios' },
 ]
 
