@@ -65,7 +65,7 @@ export default function ProfilePage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const brandColor = (localStorage.getItem('lovers_marca') === 'SMASH') ? '#0052CC' : '#C41E3A'
+  const [brandColor, setBrandColor] = useState('#C41E3A') ? '#0052CC' : '#C41E3A'
 
   if (loading) {
     return <div className="min-h-dvh flex items-center justify-center"><p className="text-gray-400 text-sm">Cargando...</p></div>
