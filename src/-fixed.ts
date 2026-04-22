@@ -29,14 +29,11 @@ export async function middleware(request: NextRequest) {
   // Protect admin routes — require Supabase Auth session
   if (pathname.startsWith('/admin')) {
     if (!user) {
-      const loginUrl = new URL('/auth/login', request.url)
+      const loginUrl = new URL('/auth/login/admin', request.url)
       loginUrl.searchParams.set('redirectTo', pathname)
       return NextResponse.redirect(loginUrl)
     }
   }
-
-  // Client auth is handled client-side via localStorage (WhatsApp phone number)
-  // API routes are protected via service role key server-side
 
   return supabaseResponse
 }
