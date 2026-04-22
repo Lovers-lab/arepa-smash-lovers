@@ -1,20 +1,21 @@
 'use client'
+
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Order, OrderStatus } from '@/types'
 
 const supabase = createClient()
 
 const ESTADOS: { key: OrderStatus; label: string; icon: string; desc: string }[] = [
-  { key: 'PAGADO',         label: 'Confirmado',        icon: '✅', desc: 'Pago recibido. Esperando confirmación.' },
-  { key: 'EN_COCINA',      label: 'En cocina',          icon: '🍳', desc: 'Tu orden está siendo preparada.' },
-  { key: 'LISTO',          label: 'Listo',              icon: '✓',  desc: 'Tu orden está lista para despacho.' },
-  { key: 'ENVIO_SOLICITADO', label: 'Repartidor asignado', icon: '📍', desc: 'Se está asignando un repartidor.' },
-  { key: 'EN_CAMINO',      label: 'En camino',          icon: '🛵', desc: '¡Tu pedido está en camino!' },
-  { key: 'ENTREGADO',      label: 'Entregado',          icon: '🎉', desc: '¡Pedido entregado! Buen provecho.' },
+  { key: 'PAGADO',           label: 'Confirmado',        icon: '✅', desc: 'Pago recibido.' },
+  { key: 'EN_COCINA',        label: 'En cocina',          icon: '🍳', desc: 'Preparando tu orden.' },
+  { key: 'LISTO',            label: 'Listo',              icon: '✓',  desc: 'Listo para despacho.' },
+  { key: 'ENVIO_SOLICITADO', label: 'Repartidor',         icon: '📍', desc: 'Asignando repartidor.' },
+  { key: 'EN_CAMINO',        label: 'En camino',          icon: '🛵', desc: '¡Va en camino!' },
+  { key: 'ENTREGADO',        label: 'Entregado',          icon: '🎉', desc: '¡Buen provecho!' },
 ]
 
 function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
@@ -22,6 +23,7 @@ function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
 export default function OrderTrackingPage() {
   const { id } = useParams<{ id: string }>()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const isSuccess = searchParams.get('success') === '1'
 
   const [order, setOrder] = useState<Order | null>(null)
@@ -33,28 +35,19 @@ export default function OrderTrackingPage() {
 
   useEffect(() => {
     loadOrder()
-    const channel = supabase
-      .channel(`order_${id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'orders',
-        filter: `id=eq.${id}`,
-      }, payload => {
-        setOrder(prev => prev ? { ...prev, ...payload.new } : null)
-      })
+    const channel = supabase.channel(`order_${id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` },
+        payload => setOrder(prev => prev ? { ...prev, ...payload.new } : null))
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [id])
 
   async function loadOrder() {
-    const { data } = await supabase
-      .from('orders')
+    const { data } = await supabase.from('orders')
       .select('*, user:users(nombre, whatsapp), items:order_items(*, product:products(nombre, precio))')
-      .eq('id', id)
-      .single()
+      .eq('id', id).single()
     setOrder(data as Order)
     setLoading(false)
-
-    // Check if review was already sent
     const { data: review } = await supabase.from('reviews').select('id').eq('order_id', id).single()
     if (review) setReviewSent(true)
   }
@@ -62,181 +55,172 @@ export default function OrderTrackingPage() {
   async function submitReview() {
     if (!stars) return
     const user = JSON.parse(localStorage.getItem('lovers_user') || '{}')
-    await supabase.from('reviews').insert({
-      order_id: id,
-      user_id: user.id,
-      estrellas: stars,
-      comentario: comment.trim() || null,
-    })
-    setReviewSent(true)
-    setShowReview(false)
+    await supabase.from('reviews').insert({ order_id: id, user_id: user.id, estrellas: stars, comentario: comment.trim() || null })
+    setReviewSent(true); setShowReview(false)
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center">
-        <div className="animate-pulse text-center space-y-2">
-          <div className="text-4xl">🛵</div>
-          <p className="text-gray-400 text-sm">Cargando tu pedido...</p>
-        </div>
+  if (loading) return (
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F8FA', fontFamily: 'var(--font-body)' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '12px', animation: 'bounce 1s infinite' }}>🛵</div>
+        <p style={{ color: '#9CA3AF', fontSize: '14px' }}>Cargando tu pedido...</p>
       </div>
-    )
-  }
+    </div>
+  )
 
-  if (!order) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center p-6 text-center">
-        <div>
-          <p className="text-4xl mb-2">😕</p>
-          <p className="text-gray-500">Pedido no encontrado</p>
-        </div>
+  if (!order) return (
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center', fontFamily: 'var(--font-body)' }}>
+      <div>
+        <p style={{ fontSize: '48px', marginBottom: '12px' }}>😕</p>
+        <p style={{ color: '#6B7280', fontWeight: 600 }}>Pedido no encontrado</p>
       </div>
-    )
-  }
+    </div>
+  )
 
   const brandColor = order.marca === 'AREPA' ? '#C41E3A' : '#0052CC'
+  const brandLogo = order.marca === 'AREPA' ? '/logos/logo-arepa.png' : '/logos/logo-smash.png'
   const statusIdx = ESTADOS.findIndex(e => e.key === order.estado)
-  const currentStatus = ESTADOS[statusIdx]
+  const currentStatus = ESTADOS[Math.max(0, statusIdx)]
   const isCancelled = order.estado === 'CANCELADO'
   const isDelivered = order.estado === 'ENTREGADO'
+  const isPending = order.estado === 'PENDIENTE'
 
   return (
-    <div className="min-h-dvh bg-gray-50 pb-10">
+    <div style={{ minHeight: '100dvh', background: '#F7F8FA', paddingBottom: '32px', fontFamily: 'var(--font-body)' }}>
+      <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+
       {/* Success banner */}
       {isSuccess && (
-        <div className="sticky top-0 z-20 py-3 px-4 text-center text-white font-bold text-sm animate-fade-in"
-          style={{ background: brandColor }}>
+        <div style={{ background: brandColor, padding: '14px 20px', textAlign: 'center', color: 'white', fontWeight: 700, fontSize: '14px' }}>
           🎉 ¡Pedido confirmado! Te notificaremos por WhatsApp.
         </div>
       )}
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-3">
-          <span className="text-2xl">{order.marca === 'AREPA' ? '🫓' : '🍔'}</span>
+      <header style={{ background: 'white', borderBottom: '1px solid #E4E6EA', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 20 }}>
+        <div style={{ maxWidth: '520px', margin: '0 auto', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => router.push('/profile')}
+            style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#F3F4F6', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', color: '#6B7280' }}>‹</button>
+          <img src={brandLogo} style={{ width: '36px', height: '36px', borderRadius: '10px', objectFit: 'cover' }} alt="" />
           <div>
-            <h1 className="font-black text-lg" style={{ fontFamily: 'Syne, serif' }}>Pedido #{order.numero_pedido}</h1>
-            <p className="text-xs text-gray-400">{new Date(order.fecha_orden).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', margin: 0 }}>Pedido #{order.numero_pedido}</h1>
+            <p style={{ fontSize: '11px', color: '#9CA3AF', margin: 0 }}>
+              {new Date(order.fecha_orden).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+            </p>
           </div>
-          <div className="ml-auto">
-            <span className="text-xs font-bold px-3 py-1.5 rounded-full text-white" style={{ background: brandColor }}>
-              {order.metodo_pago === 'TARJETA' ? '💳 Tarjeta' : '🏦 Transferencia'}
-            </span>
-          </div>
+          <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: 700, padding: '4px 12px', borderRadius: '999px', background: `${brandColor}15`, color: brandColor }}>
+            {order.metodo_pago === 'TARJETA' ? '💳' : '🏦'} {order.metodo_pago === 'TARJETA' ? 'Tarjeta' : 'Transferencia'}
+          </span>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+      <main style={{ maxWidth: '520px', margin: '0 auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-        {/* Status tracker */}
-        {!isCancelled ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <div className="text-center mb-6">
-              <div className="text-5xl mb-2">{currentStatus?.icon}</div>
-              <h2 className="font-black text-xl" style={{ color: brandColor, fontFamily: 'Syne, serif' }}>
-                {currentStatus?.label}
-              </h2>
-              <p className="text-gray-500 text-sm mt-1">{currentStatus?.desc}</p>
+        {/* Status card */}
+        {!isCancelled && !isPending ? (
+          <div style={{ background: 'white', borderRadius: '20px', border: '1px solid #E4E6EA', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{ fontSize: '56px', marginBottom: '12px', animation: !isDelivered ? 'bounce 2s ease-in-out infinite' : 'none' }}>{currentStatus?.icon}</div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, color: brandColor, margin: '0 0 8px' }}>{currentStatus?.label}</h2>
+              <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>{currentStatus?.desc}</p>
             </div>
 
-            {/* Progress bar */}
-            <div className="relative">
-              <div className="flex items-center justify-between mb-2">
-                {ESTADOS.map((estado, idx) => (
-                  <div key={estado.key} className="flex flex-col items-center gap-1 flex-1">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all"
-                      style={idx <= statusIdx
-                        ? { background: brandColor, color: '#fff' }
-                        : { background: '#F3F4F6', color: '#9CA3AF' }}>
-                      {idx < statusIdx ? '✓' : estado.icon}
-                    </div>
-                    <span className="text-xs text-center text-gray-400 hidden sm:block leading-tight">{estado.label}</span>
+            {/* Progress steps */}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: '8px' }}>
+              {/* Line background */}
+              <div style={{ position: 'absolute', top: '27px', left: '5%', right: '5%', height: '3px', background: '#F0F2F5', borderRadius: '2px', zIndex: 0 }} />
+              {/* Line progress */}
+              <div style={{ position: 'absolute', top: '27px', left: '5%', height: '3px', background: brandColor, borderRadius: '2px', zIndex: 0, transition: 'width 0.6s ease', width: `${Math.max(0, statusIdx / (ESTADOS.length - 1)) * 90}%` }} />
+
+              {ESTADOS.map((estado, idx) => (
+                <div key={estado.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, position: 'relative', zIndex: 1 }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 800, transition: 'all 0.3s', background: idx <= statusIdx ? brandColor : 'white', color: idx <= statusIdx ? 'white' : '#9CA3AF', border: `2px solid ${idx <= statusIdx ? brandColor : '#E4E6EA'}`, boxShadow: idx === statusIdx ? `0 0 0 4px ${brandColor}20` : 'none' }}>
+                    {idx < statusIdx ? '✓' : estado.icon}
                   </div>
-                ))}
-              </div>
-              {/* Connector line */}
-              <div className="absolute top-4 left-4 right-4 h-0.5 bg-gray-100 -z-10" />
-              <div className="absolute top-4 left-4 h-0.5 -z-10 transition-all duration-700"
-                style={{ background: brandColor, width: `${Math.max(0, statusIdx / (ESTADOS.length - 1)) * 100}%` }} />
+                  <span style={{ fontSize: '9px', fontWeight: 600, color: idx <= statusIdx ? brandColor : '#9CA3AF', textAlign: 'center', lineHeight: 1.2, maxWidth: '48px' }}>{estado.label}</span>
+                </div>
+              ))}
             </div>
+          </div>
+        ) : isPending ? (
+          <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '20px', padding: '24px', textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px', animation: 'pulse 1.5s ease-in-out infinite' }}>⏳</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: '#92400E', margin: '0 0 8px' }}>Esperando aprobación</h2>
+            <p style={{ color: '#B45309', fontSize: '13px', margin: 0 }}>Estamos verificando tu comprobante. Te notificamos por WhatsApp.</p>
           </div>
         ) : (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center">
-            <p className="text-4xl mb-2">❌</p>
-            <h2 className="font-black text-xl text-red-700">Pedido cancelado</h2>
-            <p className="text-red-500 text-sm mt-1">Si pagaste con tarjeta, el reembolso se procesará en 3-5 días.</p>
-          </div>
-        )}
-
-        {/* PENDIENTE: waiting for transfer approval */}
-        {order.estado === 'PENDIENTE' && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 flex gap-3">
-            <span className="text-2xl">⏳</span>
-            <div>
-              <p className="font-bold text-yellow-800 text-sm">Esperando aprobación</p>
-              <p className="text-yellow-700 text-xs mt-0.5">Estamos verificando tu comprobante. Te notificamos por WhatsApp cuando esté confirmado.</p>
-            </div>
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '20px', padding: '24px', textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>❌</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: '#DC2626', margin: '0 0 8px' }}>Pedido cancelado</h2>
+            <p style={{ color: '#EF4444', fontSize: '13px', margin: 0 }}>Si pagaste con tarjeta, el reembolso se procesará en 3-5 días.</p>
           </div>
         )}
 
         {/* Order items */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
-          <h3 className="font-black text-sm mb-3" style={{ fontFamily: 'Syne, serif' }}>Tu pedido</h3>
-          <div className="space-y-2">
+        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E4E6EA', padding: '16px 20px' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', margin: '0 0 14px' }}>Tu pedido</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
             {(order.items as any[] || []).map((item: any) => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span className="text-gray-700">{item.cantidad}x {item.product?.nombre}</span>
-                <span className="font-semibold">{formatRD(item.subtotal)}</span>
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#374151' }}>
+                <span>{item.cantidad}× {item.product?.nombre}</span>
+                <span style={{ fontWeight: 600 }}>{formatRD(item.subtotal)}</span>
               </div>
             ))}
           </div>
-          <div className="border-t border-gray-100 mt-3 pt-3 space-y-1">
+          <div style={{ borderTop: '1.5px solid #F3F4F6', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {order.descuento > 0 && (
-              <div className="flex justify-between text-sm text-green-600 font-semibold">
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#10B981', fontWeight: 700 }}>
                 <span>Descuento</span><span>−{formatRD(order.descuento)}</span>
               </div>
             )}
-            <div className="flex justify-between text-sm text-gray-500">
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#6B7280' }}>
               <span>Envío</span>
-              <span>{order.costo_envio === 0 ? 'GRATIS' : formatRD(order.costo_envio)}</span>
+              <span style={{ color: order.costo_envio === 0 ? '#10B981' : '#6B7280', fontWeight: order.costo_envio === 0 ? 700 : 400 }}>
+                {order.costo_envio === 0 ? 'GRATIS 🎉' : formatRD(order.costo_envio)}
+              </span>
             </div>
-            <div className="flex justify-between font-black text-base pt-1">
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', paddingTop: '8px', borderTop: '1px solid #F3F4F6' }}>
               <span>Total pagado</span>
               <span style={{ color: brandColor }}>{formatRD(order.total_pagado)}</span>
             </div>
           </div>
         </div>
 
-        {/* Review section — show after delivered */}
+        {/* Delivery address */}
+        {(order as any).direccion_texto && (
+          <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E4E6EA', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '22px' }}>📍</span>
+            <div>
+              <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '0 0 2px', fontWeight: 600 }}>Dirección de entrega</p>
+              <p style={{ fontSize: '13px', color: '#374151', margin: 0, fontWeight: 500 }}>{(order as any).direccion_texto}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Review */}
         {isDelivered && !reviewSent && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E4E6EA', padding: '20px' }}>
             {!showReview ? (
-              <div className="text-center space-y-2">
-                <p className="font-bold text-sm text-gray-700">¿Cómo estuvo tu experiencia?</p>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontWeight: 700, fontSize: '15px', marginBottom: '12px', color: '#374151' }}>¿Cómo estuvo tu experiencia?</p>
                 <button onClick={() => setShowReview(true)}
-                  className="px-6 py-3 rounded-xl text-white font-bold text-sm"
-                  style={{ background: brandColor }}>⭐ Calificar pedido</button>
+                  style={{ padding: '12px 28px', borderRadius: '999px', border: 'none', background: brandColor, color: 'white', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', cursor: 'pointer', boxShadow: `0 4px 16px ${brandColor}40` }}>
+                  ⭐ Calificar pedido
+                </button>
               </div>
             ) : (
-              <div className="space-y-3">
-                <p className="font-bold text-sm text-center">Tu opinión nos importa</p>
-                <div className="flex justify-center gap-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <p style={{ fontWeight: 700, fontSize: '15px', textAlign: 'center', margin: 0 }}>Tu opinión nos importa</p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
                   {[1,2,3,4,5].map(n => (
                     <button key={n} onClick={() => setStars(n)}
-                      className="text-3xl transition-transform hover:scale-125"
-                      style={{ filter: n <= stars ? 'none' : 'grayscale(1) opacity(0.4)' }}>⭐</button>
+                      style={{ fontSize: '32px', background: 'none', border: 'none', cursor: 'pointer', filter: n <= stars ? 'none' : 'grayscale(1) opacity(0.35)', transition: 'all 0.15s' }}>⭐</button>
                   ))}
                 </div>
-                <textarea
-                  placeholder="Comentario opcional (máx. 300 caracteres)"
-                  value={comment}
-                  onChange={e => setComment(e.target.value.slice(0, 300))}
-                  rows={3}
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none outline-none focus:border-gray-900 transition-colors"
-                />
+                <textarea placeholder="Comentario opcional..." value={comment} onChange={e => setComment(e.target.value.slice(0, 300))} rows={3}
+                  style={{ border: '2px solid #E4E6EA', borderRadius: '12px', padding: '10px 14px', fontSize: '14px', outline: 'none', resize: 'none', fontFamily: 'var(--font-body)' }} />
                 <button onClick={submitReview} disabled={!stars}
-                  className="w-full py-3 rounded-xl text-white font-bold disabled:opacity-40"
-                  style={{ background: brandColor }}>
+                  style={{ width: '100%', padding: '14px', borderRadius: '999px', border: 'none', background: !stars ? '#E4E6EA' : brandColor, color: !stars ? '#9CA3AF' : 'white', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', cursor: !stars ? 'not-allowed' : 'pointer' }}>
                   Enviar reseña
                 </button>
               </div>
@@ -245,19 +229,18 @@ export default function OrderTrackingPage() {
         )}
 
         {reviewSent && isDelivered && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
-            <p className="text-2xl mb-1">🙏</p>
-            <p className="font-bold text-green-700 text-sm">¡Gracias por tu reseña!</p>
+          <div style={{ background: '#DCFCE7', border: '1px solid #86EFAC', borderRadius: '16px', padding: '16px', textAlign: 'center' }}>
+            <p style={{ fontSize: '28px', marginBottom: '4px' }}>🙏</p>
+            <p style={{ fontWeight: 700, color: '#15803D', fontSize: '14px', margin: 0 }}>¡Gracias por tu reseña!</p>
           </div>
         )}
 
         {/* Order again */}
         {(isDelivered || isCancelled) && (
-          <a href="/menu"
-            className="block w-full py-4 rounded-2xl text-center text-white font-black text-base"
-            style={{ background: `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)` }}>
+          <button onClick={() => router.push('/menu')}
+            style={{ width: '100%', padding: '18px', borderRadius: '20px', border: 'none', background: `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', cursor: 'pointer', boxShadow: `0 8px 32px ${brandColor}40` }}>
             {isDelivered ? '🛒 Pedir de nuevo' : '🛒 Ver menú'}
-          </a>
+          </button>
         )}
       </main>
     </div>
