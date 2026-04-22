@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Product, Category, CartItem, Marca } from '@/types'
@@ -15,21 +15,10 @@ function formatRD(amount: number) {
   return `RD$${amount.toLocaleString('es-DO')}`
 }
 
-function createRipple(e: React.MouseEvent<HTMLButtonElement>, color = 'rgba(255,255,255,0.4)') {
-  const btn = e.currentTarget
-  const circle = document.createElement('span')
-  const diameter = Math.max(btn.clientWidth, btn.clientHeight)
-  const radius = diameter / 2
-  const rect = btn.getBoundingClientRect()
-  circle.style.cssText = `width:${diameter}px;height:${diameter}px;left:${e.clientX-rect.left-radius}px;top:${e.clientY-rect.top-radius}px;position:absolute;border-radius:50%;background:${color};transform:scale(0);animation:ripple-anim 0.5s linear;pointer-events:none;`
-  circle.classList.add('ripple')
-  btn.appendChild(circle)
-  setTimeout(() => circle.remove(), 600)
-}
-
 export default function MenuPage() {
   const router = useRouter()
   const supabase = createClient()
+
   const [marca, setMarca] = useState<Marca>('AREPA')
   const [user, setUser] = useState<{ id: string; nombre: string } | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -40,73 +29,99 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true)
   const [brandColors, setBrandColors] = useState({ primary: '#C41E3A', secondary: '#E63946' })
   const [modifierProduct, setModifierProduct] = useState<Product | null>(null)
-  const [addedFeedback, setAddedFeedback] = useState<string | null>(null)
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
-  const tabsRef = useRef<HTMLDivElement>(null)
-  const isScrollingRef = useRef(false)
 
   useEffect(() => {
     const storedUser = localStorage.getItem('lovers_user')
     const storedMarca = localStorage.getItem('lovers_marca') as Marca
     const storedCart = localStorage.getItem('lovers_cart')
+
     if (!storedUser) { router.replace('/auth/login'); return }
+
     const u = JSON.parse(storedUser)
     const m = storedMarca || 'AREPA'
-    setUser(u); setMarca(m)
-    if (storedCart) { const p: Cart = JSON.parse(storedCart); if (p.marca === m) setCart(p) }
-    loadMenu(m); loadBrandColors(m); loadLoyalty(u.id)
-  }, [])
+    setUser(u)
+    setMarca(m)
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (isScrollingRef.current) return
-      const scrollY = window.scrollY + 160
-      let current = categories[0]?.id || ''
-      for (const cat of categories) {
-        const el = sectionRefs.current[cat.id]
-        if (el && el.offsetTop <= scrollY) current = cat.id
-      }
-      if (current !== activeCategory) {
-        setActiveCategory(current)
-        const tabEl = tabsRef.current?.querySelector(`[data-catid="${current}"]`) as HTMLElement
-        if (tabEl && tabsRef.current) tabsRef.current.scrollTo({ left: tabEl.offsetLeft - 16, behavior: 'smooth' })
-      }
+    if (storedCart) {
+      const parsed: Cart = JSON.parse(storedCart)
+      if (parsed.marca === m) setCart(parsed)
     }
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [categories, activeCategory])
+
+    loadMenu(m)
+    loadBrandColors(m)
+    loadLoyalty(u.id)
+  }, [])
 
   async function loadMenu(m: Marca) {
     setLoading(true)
-    const { data: cats } = await supabase.from('categories').select('*').eq('marca', m).eq('activo', true).order('orden')
-    const { data: prods } = await supabase.from('products').select('*, category:categories(*)').eq('marca', m).eq('activo', true).order('orden_en_categoria')
-    if (cats) { setCategories(cats); setActiveCategory(cats[0]?.id || '') }
+    const { data: cats } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('marca', m)
+      .eq('activo', true)
+      .order('orden')
+
+    const { data: prods } = await supabase
+      .from('products')
+      .select('*, category:categories(*)')
+      .eq('marca', m)
+      .eq('activo', true)
+      .order('orden_en_categoria')
+
+    if (cats) {
+      setCategories(cats)
+      setActiveCategory(cats[0]?.id || '')
+    }
     if (prods) setProducts(prods)
     setLoading(false)
   }
 
   async function loadBrandColors(m: Marca) {
-    const { data } = await supabase.from('brand_colors').select('color_primario, color_secundario').eq('marca', m).eq('activo', true).single()
-    if (data) setBrandColors({ primary: data.color_primario, secondary: data.color_secundario })
-    else setBrandColors(m === 'AREPA' ? { primary: '#C41E3A', secondary: '#E63946' } : { primary: '#0052CC', secondary: '#0066FF' })
+    const { data } = await supabase
+      .from('brand_colors')
+      .select('color_primario, color_secundario')
+      .eq('marca', m)
+      .eq('activo', true)
+      .single()
+
+    if (data) {
+      setBrandColors({ primary: data.color_primario, secondary: data.color_secundario })
+    } else {
+      setBrandColors(m === 'AREPA'
+        ? { primary: '#C41E3A', secondary: '#E63946' }
+        : { primary: '#0052CC', secondary: '#0066FF' }
+      )
+    }
   }
 
   async function loadLoyalty(userId: string) {
-    const { data } = await supabase.from('loyalty_balances').select('saldo').eq('user_id', userId).single()
+    const { data } = await supabase
+      .from('loyalty_balances')
+      .select('saldo')
+      .eq('user_id', userId)
+      .single()
     if (data) setLoyaltySaldo(data.saldo)
   }
 
-  function scrollToCategory(catId: string) {
-    const el = sectionRefs.current[catId]
-    if (!el) return
-    isScrollingRef.current = true
-    setActiveCategory(catId)
-    window.scrollTo({ top: el.offsetTop - 130, behavior: 'smooth' })
-    setTimeout(() => { isScrollingRef.current = false }, 900)
-  }
+  // Subscribe to real-time brand color changes
+  useEffect(() => {
+    if (!marca) return
+    const channel = supabase
+      .channel('brand_colors_realtime')
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'brand_colors',
+        filter: `marca=eq.${marca}`,
+      }, (payload) => {
+        const c = payload.new as { color_primario: string; color_secundario: string }
+        setBrandColors({ primary: c.color_primario, secondary: c.color_secundario })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [marca])
 
   function addToCart(product: Product, modifiers: SelectedModifier[] = [], totalExtras: number = 0) {
     setCart(prev => {
+      // If product has modifiers, always add as new line item
       const hasModifiers = modifiers.length > 0
       const existing = !hasModifiers ? prev.items.find(i => i.product.id === product.id && !i.modifiers?.length) : null
       const items = existing
@@ -116,180 +131,163 @@ export default function MenuPage() {
       localStorage.setItem('lovers_cart', JSON.stringify(updated))
       return updated
     })
-    setAddedFeedback(product.id)
-    setTimeout(() => setAddedFeedback(null), 1000)
   }
 
   function removeFromCart(productId: string) {
     setCart(prev => {
       const existing = prev.items.find(i => i.product.id === productId)
       if (!existing) return prev
-      const items = existing.cantidad === 1 ? prev.items.filter(i => i.product.id !== productId) : prev.items.map(i => i.product.id === productId ? { ...i, cantidad: i.cantidad - 1 } : i)
+      const items = existing.cantidad === 1
+        ? prev.items.filter(i => i.product.id !== productId)
+        : prev.items.map(i => i.product.id === productId ? { ...i, cantidad: i.cantidad - 1 } : i)
       const updated: Cart = { marca, items }
       localStorage.setItem('lovers_cart', JSON.stringify(updated))
       return updated
     })
   }
 
-  const cartCount = cart.items.reduce((a, i) => a + i.cantidad, 0)
-  const cartSubtotal = cart.items.reduce((a, i) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0)
-  const brandLogo = marca === 'AREPA' ? '/logos/logo-arepa.png' : '/logos/logo-smash.png'
+  const cartCount = cart.items.reduce((acc, i) => acc + i.cantidad, 0)
+  const cartSubtotal = cart.items.reduce((acc, i) => acc + i.product.precio * i.cantidad, 0)
+  const categorizedProducts = (catId: string) => products.filter(p => p.category_id === catId)
 
-  if (loading) return (
-    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F8FA' }}>
-      <div style={{ textAlign: 'center' }}>
-        <img src={brandLogo} style={{ width: '72px', height: '72px', borderRadius: '18px', marginBottom: '12px', opacity: 0.7 }} alt="" />
-        <p style={{ color: '#9CA3AF', fontSize: '14px' }}>Cargando menú...</p>
+  if (loading) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center">
+        <div className="animate-pulse text-center space-y-2">
+          <div className="text-4xl">{marca === 'AREPA' ? '🫓' : '🍔'}</div>
+          <p className="text-gray-500 text-sm">Cargando menú...</p>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#F7F8FA', paddingBottom: '120px', fontFamily: 'var(--font-body)' }}>
-      <style>{`
-        @keyframes ripple-anim { to { transform:scale(4); opacity:0; } }
-        @keyframes slideUp { from { opacity:0; transform:translateX(-50%) translateY(16px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
-        @keyframes popIn { 0%{transform:scale(0.7);opacity:0} 60%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
-        .md-ripple { position:relative; overflow:hidden; }
-        .scrollbar-hide::-webkit-scrollbar { display:none; }
-        .scrollbar-hide { scrollbar-width:none; }
-      `}</style>
-
-      {/* HEADER */}
-      <header style={{ position:'sticky', top:0, zIndex:30, background:'white', borderBottom:'1px solid #E4E6EA', boxShadow:'0 1px 8px rgba(0,0,0,0.06)' }}>
-        <div style={{ maxWidth:'640px', margin:'0 auto', padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <button onClick={() => router.push('/')} style={{ display:'flex', alignItems:'center', gap:'10px', background:'none', border:'none', cursor:'pointer', padding:0 }}>
-            <img src={brandLogo} style={{ width:'36px', height:'36px', borderRadius:'10px', objectFit:'cover' }} alt="" />
-            <div style={{ textAlign:'left' }}>
-              <div style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', color:brandColors.primary, lineHeight:1 }}>
-                {marca === 'AREPA' ? 'Arepa Lovers' : 'Smash Lovers'}
-              </div>
-              <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'2px' }}>Hola, {user?.nombre?.split(' ')[0]} 👋</div>
-            </div>
+    <div className="min-h-dvh bg-gray-50 pb-32">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <button onClick={() => router.push('/')} className="flex items-center gap-2 font-bold text-sm" style={{ color: brandColors.primary }}>
+            <span>{marca === 'AREPA' ? '🫓' : '🍔'}</span>
+            <span style={{ fontFamily: 'Syne, serif' }}>{marca === 'AREPA' ? 'Arepa Lovers' : 'Smash Lovers'}</span>
           </button>
-          {loyaltySaldo > 0 && (
-            <button onClick={() => router.push('/profile')}
-              style={{ display:'flex', alignItems:'center', gap:'5px', padding:'7px 14px', borderRadius:'999px', border:'none', cursor:'pointer', background:`${brandColors.primary}12`, color:brandColors.primary, fontSize:'12px', fontWeight:700 }}>
-              💰 {loyaltySaldo} pts
-            </button>
-          )}
+
+          <div className="flex items-center gap-3">
+            {loyaltySaldo > 0 && (
+              <div className="text-xs font-semibold px-2 py-1 rounded-full" style={{ background: `${brandColors.primary}15`, color: brandColors.primary }}>
+                💰 {formatRD(loyaltySaldo)}
+              </div>
+            )}
+            <span className="text-sm text-gray-500">Hola, {user?.nombre?.split(' ')[0]}</span>
+          </div>
         </div>
 
-        {/* Category chips */}
-        <div ref={tabsRef} className="scrollbar-hide"
-          style={{ display:'flex', gap:'8px', padding:'0 16px 12px', overflowX:'auto', maxWidth:'640px', margin:'0 auto' }}>
-          {categories.map(cat => (
-            <button key={cat.id} data-catid={cat.id}
-              onClick={(e) => { createRipple(e, activeCategory === cat.id ? 'rgba(255,255,255,0.3)' : `${brandColors.primary}20`); scrollToCategory(cat.id) }}
-              className="md-ripple"
-              style={{ padding:'8px 18px', borderRadius:'999px', border:'none', fontFamily:'var(--font-body)', fontSize:'13px', fontWeight:600, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0, transition:'all 0.2s', background: activeCategory === cat.id ? brandColors.primary : '#F3F4F6', color: activeCategory === cat.id ? 'white' : '#6B7280', boxShadow: activeCategory === cat.id ? `0 2px 8px ${brandColors.primary}40` : 'none' }}>
-              {cat.nombre}
-            </button>
-          ))}
+        {/* Category tabs */}
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 px-4 pb-3 whitespace-nowrap">
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className="text-sm font-semibold px-4 py-2 rounded-full transition-all duration-200 shrink-0"
+                style={activeCategory === cat.id
+                  ? { background: brandColors.primary, color: '#fff' }
+                  : { background: '#F3F4F6', color: '#6B7280' }
+                }
+              >
+                {cat.nombre}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      {/* PRODUCTS */}
-      <main style={{ maxWidth:'640px', margin:'0 auto', padding:'0 14px' }}>
-        {categories.map(cat => {
-          const catProducts = products.filter(p => p.category_id === cat.id)
-          if (!catProducts.length) return null
-          return (
-            <section key={cat.id} ref={el => { sectionRefs.current[cat.id] = el }} style={{ paddingTop:'24px' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'14px' }}>
-                <h2 style={{ fontFamily:'var(--font-display)', fontSize:'20px', fontWeight:800, color:'#0D0F12', margin:0 }}>{cat.nombre}</h2>
-                <div style={{ height:'2px', flex:1, background:'#F0F2F5', borderRadius:'2px' }} />
-                <span style={{ fontSize:'12px', color:'#9CA3AF', fontWeight:600 }}>{catProducts.length}</span>
-              </div>
-
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
-                {catProducts.map(product => {
-                  const inCartItem = cart.items.find(i => i.product.id === product.id)
-                  const inCartQty = inCartItem?.cantidad || 0
-                  const justAdded = addedFeedback === product.id
-                  const descuento = (product as any).descuento_pct
-                  const esDestacado = (product as any).es_destacado
-
-                  return (
-                    <div key={product.id}
-                      style={{ background:'white', borderRadius:'20px', border:'1px solid #E8EAED', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 2px 8px rgba(0,0,0,0.04)', transition:'transform 0.2s, box-shadow 0.2s' }}>
-
-                      {/* Image */}
-                      <div style={{ position:'relative', height:'120px', background:'linear-gradient(135deg, #FEF3C7, #FDE68A)', overflow:'hidden' }}>
-                        {product.foto_url
-                          ? <img src={product.foto_url} alt={product.nombre} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                          : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'40px' }}>{marca === 'AREPA' ? '🫓' : '🍔'}</div>
-                        }
-                        {descuento > 0 && (
-                          <div style={{ position:'absolute', top:'8px', left:'8px', background:'#F59E0B', color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>-{descuento}%</div>
-                        )}
-                        {esDestacado && (
-                          <div style={{ position:'absolute', top:'8px', right:'8px', background:brandColors.primary, color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>⭐ Top</div>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div style={{ padding:'10px 12px', flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between', gap:'8px' }}>
-                        <div>
-                          <h3 style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'13px', color:'#0D0F12', lineHeight:1.3, margin:'0 0 3px' }}>{product.nombre}</h3>
-                          {product.descripcion && (
-                            <p style={{ fontSize:'11px', color:'#9CA3AF', lineHeight:1.4, margin:0, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
-                              {product.descripcion}
-                            </p>
-                          )}
-                        </div>
-
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                          <div>
-                            <div style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', color:brandColors.primary }}>{formatRD(product.precio)}</div>
+      {/* Products */}
+      <main className="max-w-2xl mx-auto px-4 pt-4 space-y-6">
+        {categories
+          .filter(cat => !activeCategory || cat.id === activeCategory)
+          .map(cat => {
+            const catProducts = categorizedProducts(cat.id)
+            if (!catProducts.length) return null
+            return (
+              <section key={cat.id}>
+                <h2 className="text-lg font-black mb-3" style={{ fontFamily: 'Syne, serif' }}>{cat.nombre}</h2>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {catProducts.map(product => {
+                    const inCart = cart.items.find(i => i.product.id === product.id)
+                    return (
+                      <div key={product.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow">
+                        {product.foto_url && (
+                          <div className="h-40 overflow-hidden">
+                            <img src={product.foto_url} alt={product.nombre} className="w-full h-full object-cover" />
                           </div>
-
-                          {inCartQty > 0 ? (
-                            <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                              <button onClick={() => removeFromCart(product.id)} className="md-ripple"
-                                style={{ width:'28px', height:'28px', borderRadius:'50%', border:`2px solid ${brandColors.primary}`, background:'white', color:brandColors.primary, fontSize:'16px', fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>−</button>
-                              <span style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'14px', minWidth:'16px', textAlign:'center', animation: justAdded ? 'popIn 0.3s ease' : 'none' }}>{inCartQty}</span>
-                              <button onClick={(e) => { createRipple(e); setModifierProduct(product) }} className="md-ripple"
-                                style={{ width:'28px', height:'28px', borderRadius:'50%', border:'none', background:brandColors.primary, color:'white', fontSize:'16px', fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', boxShadow:`0 2px 8px ${brandColors.primary}40` }}>+</button>
-                            </div>
-                          ) : (
-                            <button onClick={(e) => { createRipple(e); setModifierProduct(product) }} className="md-ripple"
-                              style={{ width:'34px', height:'34px', borderRadius:'50%', border:'none', background:brandColors.primary, color:'white', fontSize:'22px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', boxShadow:`0 3px 10px ${brandColors.primary}45`, lineHeight:1 }}>+</button>
-                          )}
+                        )}
+                        <div className="p-3 flex-1 flex flex-col justify-between gap-2">
+                          <div>
+                            <h3 className="font-bold text-sm text-gray-900">{product.nombre}</h3>
+                            {product.descripcion && (
+                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{product.descripcion}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-black text-base" style={{ color: brandColors.primary }}>
+                              {formatRD(product.precio)}
+                            </span>
+                            {inCart ? (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => removeFromCart(product.id)}
+                                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-lg"
+                                  style={{ background: brandColors.primary }}
+                                >−</button>
+                                <span className="font-bold text-sm w-4 text-center">{inCart.cantidad}</span>
+                                <button
+                                  onClick={() => setModifierProduct(product)}
+                                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-lg"
+                                  style={{ background: brandColors.primary }}
+                                >+</button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setModifierProduct(product)}
+                                className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-lg transition-transform hover:scale-110"
+                                style={{ background: brandColors.primary }}
+                              >+</button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          )
-        })}
-
-        {categories.length === 0 && (
-          <div style={{ textAlign:'center', padding:'60px 20px', color:'#9CA3AF' }}>
-            <p style={{ fontSize:'48px', marginBottom:'12px' }}>{marca === 'AREPA' ? '🫓' : '🍔'}</p>
-            <p style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'18px', color:'#374151', marginBottom:'8px' }}>Menú en preparación</p>
-            <p style={{ fontSize:'14px' }}>Pronto tendremos todo listo</p>
-          </div>
-        )}
+                    )
+                  })}
+                </div>
+              </section>
+            )
+          })}
       </main>
 
-      {/* MODIFIER MODAL */}
+      {/* Modifier Modal */}
       {modifierProduct && (
-        <ModifierModal product={modifierProduct} brandColor={brandColors.primary}
-          onConfirm={(modifiers, totalExtras) => { addToCart(modifierProduct, modifiers, totalExtras); setModifierProduct(null) }}
-          onClose={() => setModifierProduct(null)} />
+        <ModifierModal
+          product={modifierProduct}
+          brandColor={brandColors.primary}
+          onConfirm={(modifiers, totalExtras) => {
+            addToCart(modifierProduct, modifiers, totalExtras)
+            setModifierProduct(null)
+          }}
+          onClose={() => setModifierProduct(null)}
+        />
       )}
 
-      {/* CART FAB */}
+      {/* Floating cart button */}
       {cartCount > 0 && (
-        <div style={{ position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)', zIndex:40, width:'100%', maxWidth:'420px', padding:'0 16px', animation:'slideUp 0.3s ease' }}>
-          <button onClick={() => router.push('/cart')} className="md-ripple"
-            style={{ width:'100%', padding:'18px 24px', borderRadius:'20px', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', background:`linear-gradient(135deg, ${brandColors.primary}, ${brandColors.secondary})`, boxShadow:`0 8px 32px ${brandColors.primary}50`, position:'relative' }}>
-            <span style={{ background:'rgba(255,255,255,0.2)', borderRadius:'999px', padding:'4px 12px', fontSize:'14px', fontWeight:800, color:'white' }}>{cartCount}</span>
-            <span style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'15px', color:'white' }}>Ver carrito</span>
-            <span style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', color:'white' }}>{formatRD(cartSubtotal)}</span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-sm px-4">
+          <button
+            onClick={() => router.push('/cart')}
+            className="w-full py-4 px-6 rounded-2xl text-white font-bold flex items-center justify-between shadow-2xl transition-transform hover:scale-[1.02] active:scale-[0.98]"
+            style={{ background: `linear-gradient(135deg, ${brandColors.primary}, ${brandColors.secondary})` }}
+          >
+            <span className="bg-white/20 rounded-full px-2 py-0.5 text-sm font-black">{cartCount}</span>
+            <span>Ver carrito</span>
+            <span className="font-black">{formatRD(cartSubtotal)}</span>
           </button>
         </div>
       )}
