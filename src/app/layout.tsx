@@ -1,33 +1,26 @@
 import type { Metadata, Viewport } from 'next'
-import { Syne, DM_Sans } from 'next/font/google'
+import { Outfit, Plus_Jakarta_Sans } from 'next/font/google'
 import '@/styles/globals.css'
 
-const syne = Syne({
+const outfit = Outfit({
   subsets: ['latin'],
-  weight: ['400', '600', '700', '800'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-display',
   display: 'swap',
 })
 
-const dmSans = DM_Sans({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-body',
   display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: {
-    default: 'Arepa & Smash Lovers',
-    template: '%s | Arepa & Smash Lovers',
-  },
-  description: 'Comida venezolana y smash burgers. Delivery en Santo Domingo.',
+  title: { default: 'Arepa & Smash Lovers', template: '%s | Lovers Kitchen' },
+  description: 'Tequeños gratis en tu primera compra. Delivery en Santo Domingo.',
   manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Lovers',
-  },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Lovers' },
 }
 
 export const viewport: Viewport = {
@@ -39,7 +32,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${syne.variable} ${dmSans.variable}`}>
+    <html lang="es" className={`${outfit.variable} ${jakarta.variable}`}>
       <body>{children}</body>
     </html>
   )

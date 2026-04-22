@@ -1,179 +1,95 @@
-
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   AREPA SMASH LOVERS — Design System
-   ============================================================ */
-
 :root {
-  /* Default brand: neutral until marca is selected */
-  --brand-primary: #1A1A1A;
-  --brand-secondary: #333333;
-  --brand-text: #FFFFFF;
-  --brand-bg: #FFFFFF;
-  --brand-buttons: #1A1A1A;
-
-  /* Arepa Lovers */
-  --arepa-primary: #C41E3A;
-  --arepa-secondary: #E63946;
-  --arepa-text: #FFFFFF;
-  --arepa-bg: #FFFFFF;
-  --arepa-buttons: #C41E3A;
-  --arepa-links: #C41E3A;
-  --arepa-borders: #E63946;
-
-  /* Smash Lovers */
-  --smash-primary: #0052CC;
-  --smash-secondary: #0066FF;
-  --smash-text: #FFFFFF;
-  --smash-bg: #FFFFFF;
-  --smash-buttons: #0052CC;
-  --smash-links: #0052CC;
-  --smash-borders: #0066FF;
-
-  /* Fonts */
-  --font-display: 'Syne', serif;
-  --font-body: 'DM Sans', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-
-  /* Spacing */
-  --page-padding: clamp(1rem, 4vw, 2rem);
-  --card-radius: 1rem;
-  --button-radius: 0.75rem;
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --arepa: #C41E3A;
+  --arepa-light: #E63946;
+  --smash: #0052CC;
+  --smash-light: #0066FF;
+  --brand: #C41E3A;
+  --brand-light: #E63946;
+  --surface: #FFFFFF;
+  --surface-2: #F7F8FA;
+  --outline: #E4E6EA;
+  --text-primary: #0D0F12;
+  --text-secondary: #4B5563;
+  --text-tertiary: #9CA3AF;
+  --radius-full: 999px;
 }
 
-/* Brand context classes — set by BrandProvider */
-.brand-arepa {
-  --brand-primary: var(--arepa-primary);
-  --brand-secondary: var(--arepa-secondary);
-  --brand-text: var(--arepa-text);
-  --brand-bg: var(--arepa-bg);
-  --brand-buttons: var(--arepa-buttons);
-  --brand-links: var(--arepa-links);
-  --brand-borders: var(--arepa-borders);
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-.brand-smash {
-  --brand-primary: var(--smash-primary);
-  --brand-secondary: var(--smash-secondary);
-  --brand-text: var(--smash-text);
-  --brand-bg: var(--smash-bg);
-  --brand-buttons: var(--smash-buttons);
-  --brand-links: var(--smash-links);
-  --brand-borders: var(--smash-borders);
-}
-
-/* Base styles */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  scroll-behavior: smooth;
-}
+html { -webkit-font-smoothing: antialiased; }
 
 body {
-  background-color: #F8F9FA;
-  color: #1A1A1A;
+  font-family: var(--font-body);
+  background: var(--surface-2);
+  color: var(--text-primary);
   min-height: 100dvh;
 }
 
-/* Typography */
-h1, h2, h3, h4, h5 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  line-height: 1.1;
+h1, h2, h3, h4, h5 { font-family: var(--font-display); }
+
+.brand-arepa { --brand: #C41E3A; --brand-light: #E63946; }
+.brand-smash { --brand: #0052CC; --brand-light: #0066FF; }
+
+/* Material ripple */
+.md-btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.md-btn::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  width: 100px; height: 100px;
+  margin: auto;
+  transform: scale(0);
+  opacity: 1;
+  left: 0; right: 0; top: 0; bottom: 0;
+  pointer-events: none;
+}
+.md-btn:active::after { animation: ripple 0.5s ease; }
+.md-btn:active { transform: scale(0.97); }
+
+@keyframes ripple {
+  to { transform: scale(4); opacity: 0; }
 }
 
-/* ============================================================
-   COMPONENTS
-   ============================================================ */
-
-/* Brand button */
-.btn-brand {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold transition-all duration-200;
-  background-color: var(--brand-primary);
-  color: var(--brand-text);
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.btn-brand:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-}
-
-.btn-brand:active {
-  transform: translateY(0);
-}
-
-/* Card */
-.card {
-  @apply rounded-2xl bg-white p-4 shadow-sm border border-gray-100;
-}
-
-/* Status badges */
-.badge-pagado { @apply bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded-full; }
-.badge-cocina { @apply bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-1 rounded-full; }
-.badge-listo { @apply bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full; }
-.badge-camino { @apply bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded-full; }
-.badge-entregado { @apply bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded-full; }
-.badge-cancelado { @apply bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded-full; }
-.badge-pendiente { @apply bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-1 rounded-full; }
-
-/* Order flash animation */
-.order-flash {
-  animation: flash-new-order 1s ease-in-out 3;
-}
-
-@keyframes flash-new-order {
-  0%, 100% { background-color: transparent; }
-  50% { background-color: rgba(239, 68, 68, 0.15); }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 /* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #F1F1F1;
-}
-::-webkit-scrollbar-thumb {
-  background: #CCCCCC;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #AAAAAA;
-}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #E4E6EA; border-radius: 2px; }
 
-/* Print styles for comanda */
+/* Print for comanda */
 @media print {
   body * { visibility: hidden; }
   #comanda-print, #comanda-print * { visibility: visible; }
-  #comanda-print {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 80mm;
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
-}
-
-/* Mobile tap highlight */
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Input styles */
-input, textarea, select {
-  font-family: var(--font-body);
+  #comanda-print { position: absolute; left: 0; top: 0; width: 80mm; font-family: monospace; font-size: 12px; }
 }
