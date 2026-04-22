@@ -6,22 +6,20 @@ import type { Product, Category, Marca } from '@/types'
 import ModifierManager from '@/components/menu/ModifierManager'
 
 const supabase = createClient()
-
 function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
 
-interface ProductFormData {
-  nombre: string
-  descripcion: string
-  precio: string
-  category_id: string
-  activo: boolean
-  foto_url: string
+interface PForm { nombre: string; descripcion: string; precio: string; category_id: string; activo: boolean; foto_url: string; es_destacado: boolean; descuento_pct: string }
+const EMPTY: PForm = { nombre: '', descripcion: '', precio: '', category_id: '', activo: true, foto_url: '', es_destacado: false, descuento_pct: '' }
+
+function ripple(e: React.MouseEvent<HTMLButtonElement>, c = 'rgba(255,255,255,0.4)') {
+  const b = e.currentTarget, d = Math.max(b.clientWidth, b.clientHeight)
+  const r = b.getBoundingClientRect(), s = document.createElement('span')
+  s.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px;position:absolute;border-radius:50%;background:${c};transform:scale(0);animation:rpl 0.5s linear;pointer-events:none;`
+  b.appendChild(s); setTimeout(() => s.remove(), 600)
 }
 
-const EMPTY_FORM: ProductFormData = { nombre: '', descripcion: '', precio: '', category_id: '', activo: true, foto_url: '' }
-
 export default function AdminProductsPage() {
-  const [marcaFilter, setMarcaFilter] = useState<Marca>('AREPA')
+  const [marca, setMarca] = useState<Marca>('AREPA')
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [activeCatId, setActiveCatId] = useState<string>('')
@@ -30,29 +28,28 @@ export default function AdminProductsPage() {
   const [showCatForm, setShowCatForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editingCat, setEditingCat] = useState<Category | null>(null)
-  const [productForm, setProductForm] = useState<ProductFormData>(EMPTY_FORM)
+  const [pForm, setPForm] = useState<PForm>(EMPTY)
   const [catForm, setCatForm] = useState({ nombre: '', descripcion: '' })
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
   const [modifierProduct, setModifierProduct] = useState<Product | null>(null)
 
-  useEffect(() => { load(marcaFilter) }, [marcaFilter])
+  const bc = marca === 'AREPA' ? '#C41E3A' : '#0052CC'
 
-  async function load(marca: Marca) {
+  useEffect(() => { load(marca) }, [marca])
+
+  async function load(m: Marca) {
     setLoading(true)
     const [{ data: cats }, { data: prods }] = await Promise.all([
-      supabase.from('categories').select('*').eq('marca', marca).order('orden'),
-      supabase.from('products').select('*').eq('marca', marca).order('orden_en_categoria'),
+      supabase.from('categories').select('*').eq('marca', m).order('orden'),
+      supabase.from('products').select('*').eq('marca', m).order('orden_en_categoria'),
     ])
     const c = cats || []
-    setCategories(c)
-    setProducts(prods || [])
+    setCategories(c); setProducts(prods || [])
     setActiveCatId(c[0]?.id || '')
     setLoading(false)
   }
-
-  // ---- CATEGORY CRUD ----
 
   async function saveCategory() {
     if (!catForm.nombre.trim()) { setError('Escribe un nombre'); return }
@@ -60,20 +57,17 @@ export default function AdminProductsPage() {
     if (editingCat) {
       await supabase.from('categories').update({ nombre: catForm.nombre, descripcion: catForm.descripcion }).eq('id', editingCat.id)
     } else {
-      const maxOrden = Math.max(0, ...categories.map(c => c.orden))
-      await supabase.from('categories').insert({ nombre: catForm.nombre, descripcion: catForm.descripcion, marca: marcaFilter, orden: maxOrden + 1, activo: true })
+      const max = Math.max(0, ...categories.map(c => c.orden))
+      await supabase.from('categories').insert({ nombre: catForm.nombre, descripcion: catForm.descripcion, marca, orden: max + 1, activo: true })
     }
-    await load(marcaFilter)
-    setShowCatForm(false); setEditingCat(null); setCatForm({ nombre: '', descripcion: '' })
-    setSaving(false)
+    await load(marca); setShowCatForm(false); setEditingCat(null); setCatForm({ nombre: '', descripcion: '' }); setSaving(false)
   }
 
   async function deleteCategory(cat: Category) {
     const count = products.filter(p => p.category_id === cat.id).length
     if (count > 0) { alert(`Esta categoría tiene ${count} productos. Muévelos primero.`); return }
-    if (!confirm(`¿Eliminar categoría "${cat.nombre}"?`)) return
-    await supabase.from('categories').delete().eq('id', cat.id)
-    await load(marcaFilter)
+    if (!confirm(`¿Eliminar "${cat.nombre}"?`)) return
+    await supabase.from('categories').delete().eq('id', cat.id); await load(marca)
   }
 
   async function toggleCategory(cat: Category) {
@@ -81,142 +75,114 @@ export default function AdminProductsPage() {
     setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, activo: !c.activo } : c))
   }
 
-  async function moveCategoryOrder(cat: Category, dir: -1 | 1) {
+  async function moveCat(cat: Category, dir: -1 | 1) {
     const idx = categories.findIndex(c => c.id === cat.id)
-    const swapIdx = idx + dir
-    if (swapIdx < 0 || swapIdx >= categories.length) return
-    const swap = categories[swapIdx]
+    const swap = categories[idx + dir]
+    if (!swap) return
     await Promise.all([
       supabase.from('categories').update({ orden: swap.orden }).eq('id', cat.id),
       supabase.from('categories').update({ orden: cat.orden }).eq('id', swap.id),
-    ])
-    await load(marcaFilter)
+    ]); await load(marca)
   }
 
-  // ---- PRODUCT CRUD ----
-
   async function saveProduct() {
-    if (!productForm.nombre.trim() || !productForm.precio || !productForm.category_id) {
-      setError('Nombre, precio y categoría son requeridos'); return
-    }
+    if (!pForm.nombre.trim() || !pForm.precio || !pForm.category_id) { setError('Nombre, precio y categoría son requeridos'); return }
     setSaving(true); setError('')
     const payload = {
-      nombre: productForm.nombre.trim(),
-      descripcion: productForm.descripcion.trim() || null,
-      precio: parseFloat(productForm.precio),
-      category_id: productForm.category_id,
-      marca: marcaFilter,
-      activo: productForm.activo,
-      foto_url: productForm.foto_url || null,
+      nombre: pForm.nombre.trim(), descripcion: pForm.descripcion.trim() || null,
+      precio: parseFloat(pForm.precio), category_id: pForm.category_id, marca,
+      activo: pForm.activo, foto_url: pForm.foto_url || null,
+      es_destacado: pForm.es_destacado,
+      descuento_pct: pForm.descuento_pct ? parseFloat(pForm.descuento_pct) : 0,
     }
     if (editingProduct) {
       await supabase.from('products').update(payload).eq('id', editingProduct.id)
     } else {
-      const catProds = products.filter(p => p.category_id === productForm.category_id)
-      const maxOrden = Math.max(0, ...catProds.map(p => p.orden_en_categoria))
-      await supabase.from('products').insert({ ...payload, orden_en_categoria: maxOrden + 1 })
+      const catProds = products.filter(p => p.category_id === pForm.category_id)
+      const max = Math.max(0, ...catProds.map(p => p.orden_en_categoria))
+      await supabase.from('products').insert({ ...payload, orden_en_categoria: max + 1 })
     }
-    await load(marcaFilter)
-    setShowProductForm(false); setEditingProduct(null); setProductForm(EMPTY_FORM)
-    setSaving(false)
+    await load(marca); setShowProductForm(false); setEditingProduct(null); setPForm(EMPTY); setSaving(false)
   }
 
-  async function deleteProduct(product: Product) {
-    if (!confirm(`¿Eliminar "${product.nombre}"?`)) return
-    await supabase.from('products').delete().eq('id', product.id)
-    setProducts(prev => prev.filter(p => p.id !== product.id))
+  async function deleteProduct(p: Product) {
+    if (!confirm(`¿Eliminar "${p.nombre}"?`)) return
+    await supabase.from('products').delete().eq('id', p.id)
+    setProducts(prev => prev.filter(x => x.id !== p.id))
   }
 
-  async function toggleProduct(product: Product) {
-    await supabase.from('products').update({ activo: !product.activo }).eq('id', product.id)
-    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, activo: !p.activo } : p))
+  async function toggleProduct(p: Product) {
+    await supabase.from('products').update({ activo: !p.activo }).eq('id', p.id)
+    setProducts(prev => prev.map(x => x.id === p.id ? { ...x, activo: !x.activo } : x))
   }
 
-  async function uploadPhoto(file: File, productId?: string): Promise<string> {
+  async function uploadPhoto(file: File): Promise<string> {
     setUploading(true)
-    // Upload to Supabase Storage → serve via Cloudinary transform URL
     const ext = file.name.split('.').pop()
     const path = `products/${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('product-photos').upload(path, file, { upsert: true })
-    if (error) { setUploading(false); throw error }
+    await supabase.storage.from('product-photos').upload(path, file, { upsert: true })
     const { data } = supabase.storage.from('product-photos').getPublicUrl(path)
-    setUploading(false)
-    return data.publicUrl
+    setUploading(false); return data.publicUrl
   }
 
-  function openEditProduct(product: Product) {
-    setEditingProduct(product)
-    setProductForm({
-      nombre: product.nombre,
-      descripcion: product.descripcion || '',
-      precio: String(product.precio),
-      category_id: product.category_id,
-      activo: product.activo,
-      foto_url: product.foto_url || '',
-    })
+  function openEdit(p: Product) {
+    setEditingProduct(p)
+    setPForm({ nombre: p.nombre, descripcion: p.descripcion || '', precio: String(p.precio), category_id: p.category_id, activo: p.activo, foto_url: p.foto_url || '', es_destacado: (p as any).es_destacado || false, descuento_pct: String((p as any).descuento_pct || '') })
     setShowProductForm(true)
   }
 
-  function openEditCat(cat: Category) {
-    setEditingCat(cat)
-    setCatForm({ nombre: cat.nombre, descripcion: cat.descripcion || '' })
-    setShowCatForm(true)
-  }
-
   const catProducts = products.filter(p => p.category_id === activeCatId)
-  const brandColor = marcaFilter === 'AREPA' ? '#C41E3A' : '#0052CC'
+  const activeCat = categories.find(c => c.id === activeCatId)
 
   return (
-    <div className="min-h-dvh bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-3">
-          <h1 className="font-black text-lg" style={{ fontFamily: 'Syne, serif' }}>📦 Gestión de Menú</h1>
-          <div className="flex gap-2">
+    <div style={{ minHeight:'100dvh', background:'#F7F8FA', fontFamily:'var(--font-body)' }}>
+      <style>{`@keyframes rpl{to{transform:scale(4);opacity:0}} .rpl{position:relative;overflow:hidden;}`}</style>
+
+      {/* HEADER */}
+      <header style={{ background:'white', borderBottom:'1px solid #E4E6EA', position:'sticky', top:0, zIndex:20, boxShadow:'0 1px 8px rgba(0,0,0,0.06)' }}>
+        <div style={{ maxWidth:'1100px', margin:'0 auto', padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'12px' }}>
+          <h1 style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'20px', margin:0 }}>📦 Gestión de Menú</h1>
+          <div style={{ display:'flex', gap:'8px' }}>
             {(['AREPA', 'SMASH'] as Marca[]).map(m => (
-              <button key={m} onClick={() => setMarcaFilter(m)}
-                className="px-4 py-2 rounded-xl text-sm font-bold transition-all"
-                style={marcaFilter === m ? { background: brandColor, color: '#fff' } : { background: '#F3F4F6', color: '#6B7280' }}>
-                {m === 'AREPA' ? '🫓 Arepa' : '🍔 Smash'}
+              <button key={m} onClick={(e) => { ripple(e, m==='AREPA'?'rgba(196,30,58,0.2)':'rgba(0,82,204,0.2)'); setMarca(m) }} className="rpl"
+                style={{ padding:'9px 20px', borderRadius:'999px', border:'none', fontWeight:700, fontSize:'13px', cursor:'pointer', transition:'all 0.2s', position:'relative', background: marca===m ? (m==='AREPA'?'#C41E3A':'#0052CC') : '#F3F4F6', color: marca===m ? 'white' : '#6B7280', boxShadow: marca===m ? `0 2px 10px ${m==='AREPA'?'rgba(196,30,58,0.35)':'rgba(0,82,204,0.35)'}` : 'none' }}>
+                {m === 'AREPA' ? '🫓 Arepa Lovers' : '🍔 Smash Lovers'}
               </button>
             ))}
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div style={{ maxWidth:'1100px', margin:'0 auto', padding:'16px', display:'grid', gridTemplateColumns:'260px 1fr', gap:'16px' }}>
 
-        {/* LEFT: Categories */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-sm text-gray-700">CATEGORÍAS</h2>
-            <button onClick={() => { setShowCatForm(true); setEditingCat(null); setCatForm({ nombre: '', descripcion: '' }) }}
-              className="text-sm font-bold px-3 py-1.5 rounded-xl text-white"
-              style={{ background: brandColor }}>+ Nueva</button>
+        {/* LEFT: CATEGORIES */}
+        <div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
+            <span style={{ fontSize:'12px', fontWeight:700, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.5px' }}>Categorías</span>
+            <button onClick={() => { setShowCatForm(true); setEditingCat(null); setCatForm({ nombre:'', descripcion:'' }) }} className="rpl"
+              style={{ padding:'7px 14px', borderRadius:'999px', border:'none', background:bc, color:'white', fontSize:'12px', fontWeight:700, cursor:'pointer', position:'relative' }}>+ Nueva</button>
           </div>
 
           {loading ? (
-            <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+              {[1,2,3].map(i => <div key={i} style={{ height:'64px', background:'white', borderRadius:'14px', opacity:0.6 }} />)}
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
               {categories.map((cat, idx) => (
-                <div key={cat.id}
-                  onClick={() => setActiveCatId(cat.id)}
-                  className={`bg-white rounded-xl border-2 p-3 cursor-pointer transition-all ${activeCatId === cat.id ? 'shadow-sm' : 'border-gray-100 hover:border-gray-200'} ${!cat.activo ? 'opacity-50' : ''}`}
-                  style={activeCatId === cat.id ? { borderColor: brandColor } : {}}>
-                  <div className="flex items-center justify-between">
+                <div key={cat.id} onClick={() => setActiveCatId(cat.id)}
+                  style={{ background:'white', borderRadius:'14px', border:`2px solid ${activeCatId===cat.id?bc:'#E4E6EA'}`, padding:'12px 14px', cursor:'pointer', transition:'all 0.2s', opacity:cat.activo?1:0.5, boxShadow: activeCatId===cat.id?`0 2px 10px ${bc}25`:'none' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                     <div>
-                      <p className="font-semibold text-sm text-gray-900">{cat.nombre}</p>
-                      <p className="text-xs text-gray-400">{products.filter(p => p.category_id === cat.id).length} productos</p>
+                      <p style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'14px', margin:'0 0 2px', color: activeCatId===cat.id?bc:'#0D0F12' }}>{cat.nombre}</p>
+                      <p style={{ fontSize:'11px', color:'#9CA3AF', margin:0 }}>{products.filter(p=>p.category_id===cat.id).length} productos</p>
                     </div>
-                    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => moveCategoryOrder(cat, -1)} disabled={idx === 0} className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-20 text-xs">↑</button>
-                      <button onClick={() => moveCategoryOrder(cat, 1)} disabled={idx === categories.length - 1} className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-20 text-xs">↓</button>
-                      <button onClick={() => toggleCategory(cat)} className={`text-xs px-2 py-0.5 rounded-full font-semibold ${cat.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {cat.activo ? 'ON' : 'OFF'}
-                      </button>
-                      <button onClick={() => openEditCat(cat)} className="p-1 text-gray-400 hover:text-blue-500 text-xs">✏️</button>
-                      <button onClick={() => deleteCategory(cat)} className="p-1 text-gray-400 hover:text-red-500 text-xs">🗑</button>
+                    <div style={{ display:'flex', gap:'4px', alignItems:'center' }} onClick={e=>e.stopPropagation()}>
+                      <button onClick={()=>moveCat(cat,-1)} disabled={idx===0} style={{ width:'22px', height:'22px', background:'none', border:'none', cursor:'pointer', color:'#9CA3AF', fontSize:'12px', opacity:idx===0?0.2:1 }}>↑</button>
+                      <button onClick={()=>moveCat(cat,1)} disabled={idx===categories.length-1} style={{ width:'22px', height:'22px', background:'none', border:'none', cursor:'pointer', color:'#9CA3AF', fontSize:'12px', opacity:idx===categories.length-1?0.2:1 }}>↓</button>
+                      <button onClick={()=>toggleCategory(cat)} style={{ padding:'2px 8px', borderRadius:'999px', border:'none', fontSize:'10px', fontWeight:700, cursor:'pointer', background:cat.activo?'#DCFCE7':'#F3F4F6', color:cat.activo?'#15803D':'#9CA3AF' }}>{cat.activo?'ON':'OFF'}</button>
+                      <button onClick={()=>{ setEditingCat(cat); setCatForm({nombre:cat.nombre,descripcion:cat.descripcion||''}); setShowCatForm(true) }} style={{ width:'24px', height:'24px', background:'#EFF6FF', border:'none', borderRadius:'6px', cursor:'pointer', fontSize:'11px' }}>✏️</button>
+                      <button onClick={()=>deleteCategory(cat)} style={{ width:'24px', height:'24px', background:'#FEF2F2', border:'none', borderRadius:'6px', cursor:'pointer', fontSize:'11px' }}>🗑</button>
                     </div>
                   </div>
                 </div>
@@ -225,48 +191,65 @@ export default function AdminProductsPage() {
           )}
         </div>
 
-        {/* RIGHT: Products in selected category */}
-        <div className="lg:col-span-2 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-sm text-gray-700">
-              {categories.find(c => c.id === activeCatId)?.nombre || 'Selecciona categoría'} — {catProducts.length} productos
-            </h2>
+        {/* RIGHT: PRODUCTS */}
+        <div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
+            <div>
+              <span style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'18px' }}>{activeCat?.nombre || 'Selecciona una categoría'}</span>
+              <span style={{ fontSize:'13px', color:'#9CA3AF', marginLeft:'8px' }}>{catProducts.length} productos</span>
+            </div>
             {activeCatId && (
-              <button
-                onClick={() => { setShowProductForm(true); setEditingProduct(null); setProductForm({ ...EMPTY_FORM, category_id: activeCatId }) }}
-                className="text-sm font-bold px-3 py-1.5 rounded-xl text-white"
-                style={{ background: brandColor }}>+ Producto</button>
+              <button onClick={() => { setShowProductForm(true); setEditingProduct(null); setPForm({...EMPTY, category_id:activeCatId}) }} className="rpl"
+                style={{ padding:'9px 20px', borderRadius:'999px', border:'none', background:bc, color:'white', fontSize:'13px', fontWeight:700, cursor:'pointer', position:'relative', boxShadow:`0 2px 10px ${bc}35` }}>
+                + Producto
+              </button>
             )}
           </div>
 
-          <div className="space-y-2">
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:'12px' }}>
             {catProducts.map(product => (
-              <div key={product.id} className={`bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-3 ${!product.activo ? 'opacity-60' : ''}`}>
-                {product.foto_url
-                  ? <img src={product.foto_url} alt={product.nombre} className="w-14 h-14 rounded-xl object-cover shrink-0" />
-                  : <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center text-xl shrink-0">📷</div>
-                }
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-gray-900 truncate">{product.nombre}</p>
-                  {product.descripcion && <p className="text-xs text-gray-400 truncate">{product.descripcion}</p>}
-                  <p className="font-black text-sm mt-0.5" style={{ color: brandColor }}>{formatRD(product.precio)}</p>
+              <div key={product.id}
+                style={{ background:'white', borderRadius:'18px', border:'1px solid #E4E6EA', overflow:'hidden', opacity:product.activo?1:0.55, boxShadow:'0 2px 8px rgba(0,0,0,0.04)', transition:'box-shadow 0.2s' }}>
+                <div style={{ position:'relative', height:'130px', background:'linear-gradient(135deg,#FEF3C7,#FDE68A)', overflow:'hidden' }}>
+                  {product.foto_url
+                    ? <img src={product.foto_url} alt={product.nombre} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'40px' }}>📷</div>
+                  }
+                  {(product as any).descuento_pct > 0 && (
+                    <div style={{ position:'absolute', top:'8px', left:'8px', background:'#F59E0B', color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>-{(product as any).descuento_pct}%</div>
+                  )}
+                  {(product as any).es_destacado && (
+                    <div style={{ position:'absolute', top:'8px', right:'8px', background:bc, color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>⭐ Top</div>
+                  )}
+                  <div style={{ position:'absolute', bottom:'8px', right:'8px' }}>
+                    <button onClick={()=>toggleProduct(product)} style={{ padding:'4px 10px', borderRadius:'999px', border:'none', fontSize:'10px', fontWeight:800, cursor:'pointer', background:product.activo?'#DCFCE7':'rgba(0,0,0,0.5)', color:product.activo?'#15803D':'white' }}>
+                      {product.activo?'ON':'OFF'}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={() => toggleProduct(product)}
-                    className={`text-xs px-2 py-1 rounded-full font-semibold ${product.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {product.activo ? 'ON' : 'OFF'}
-                  </button>
-                  <button onClick={() => openEditProduct(product)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs hover:bg-blue-100 transition-colors">✏️ Editar</button>
-                  <button onClick={() => setModifierProduct(product)} className="p-1.5 bg-purple-50 text-purple-600 rounded-lg text-xs hover:bg-purple-100 transition-colors">🎛️ Opciones</button>
-                  <button onClick={() => deleteProduct(product)} className="p-1.5 bg-red-50 text-red-500 rounded-lg text-xs hover:bg-red-100 transition-colors">🗑</button>
+                <div style={{ padding:'12px' }}>
+                  <p style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'14px', margin:'0 0 3px', lineHeight:1.3 }}>{product.nombre}</p>
+                  {product.descripcion && <p style={{ fontSize:'11px', color:'#9CA3AF', margin:'0 0 8px', lineHeight:1.4, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{product.descripcion}</p>}
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
+                    <span style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', color:bc }}>{formatRD(product.precio)}</span>
+                  </div>
+                  <div style={{ display:'flex', gap:'6px' }}>
+                    <button onClick={()=>openEdit(product)} className="rpl"
+                      style={{ flex:1, padding:'8px', borderRadius:'10px', border:'none', background:'#EFF6FF', color:'#1D4ED8', fontSize:'12px', fontWeight:700, cursor:'pointer', position:'relative' }}>✏️ Editar</button>
+                    <button onClick={()=>setModifierProduct(product)} className="rpl"
+                      style={{ flex:1, padding:'8px', borderRadius:'10px', border:'none', background:'#EDE9FE', color:'#7C3AED', fontSize:'12px', fontWeight:700, cursor:'pointer', position:'relative' }}>🎛️ Opciones</button>
+                    <button onClick={()=>deleteProduct(product)} className="rpl"
+                      style={{ width:'34px', padding:'8px', borderRadius:'10px', border:'none', background:'#FEF2F2', color:'#DC2626', fontSize:'12px', cursor:'pointer', position:'relative' }}>🗑</button>
+                  </div>
                 </div>
               </div>
             ))}
 
             {!loading && catProducts.length === 0 && activeCatId && (
-              <div className="text-center py-10 text-gray-400">
-                <p className="text-3xl mb-2">📦</p>
-                <p>No hay productos en esta categoría</p>
+              <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'48px 20px', color:'#9CA3AF' }}>
+                <p style={{ fontSize:'40px', marginBottom:'8px' }}>📦</p>
+                <p style={{ fontWeight:600, fontSize:'15px' }}>No hay productos en esta categoría</p>
+                <p style={{ fontSize:'13px', marginTop:'4px' }}>Clic en "+ Producto" para agregar</p>
               </div>
             )}
           </div>
@@ -275,73 +258,84 @@ export default function AdminProductsPage() {
 
       {/* PRODUCT FORM MODAL */}
       {showProductForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="font-black" style={{ fontFamily: 'Syne, serif' }}>
-                {editingProduct ? 'Editar producto' : 'Nuevo producto'}
-              </h2>
-              <button onClick={() => { setShowProductForm(false); setEditingProduct(null) }} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+        <div style={{ position:'fixed', inset:0, zIndex:50, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}
+          onClick={e=>{ if(e.target===e.currentTarget){setShowProductForm(false);setEditingProduct(null)} }}>
+          <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', maxHeight:'90vh', overflow:'hidden', display:'flex', flexDirection:'column' }}>
+            <div style={{ padding:'20px', borderBottom:'1px solid #F3F4F6', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <h2 style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'18px', margin:0 }}>{editingProduct?'Editar producto':'Nuevo producto'}</h2>
+              <button onClick={()=>{setShowProductForm(false);setEditingProduct(null)}} style={{ width:'32px', height:'32px', borderRadius:'50%', background:'#F3F4F6', border:'none', cursor:'pointer', fontSize:'18px', color:'#6B7280' }}>✕</button>
             </div>
-            <div className="p-4 space-y-3">
-              {[
-                { label: 'Nombre *', key: 'nombre', placeholder: 'Ej: Arepa Pollo y Queso Gouda' },
-                { label: 'Descripción', key: 'descripcion', placeholder: 'Descripción breve...' },
-                { label: 'Precio (RD$) *', key: 'precio', placeholder: '295', type: 'number' },
-              ].map(field => (
-                <div key={field.key} className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-600">{field.label}</label>
-                  <input
-                    type={field.type || 'text'}
-                    placeholder={field.placeholder}
-                    value={(productForm as any)[field.key]}
-                    onChange={e => setProductForm(f => ({ ...f, [field.key]: e.target.value }))}
-                    className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors"
-                  />
-                </div>
-              ))}
+            <div style={{ flex:1, overflowY:'auto', padding:'20px', display:'flex', flexDirection:'column', gap:'14px' }}>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600">Categoría *</label>
-                <select value={productForm.category_id}
-                  onChange={e => setProductForm(f => ({ ...f, category_id: e.target.value }))}
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors">
-                  <option value="">Seleccionar...</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600">Foto</label>
-                <div className="flex items-center gap-3">
-                  {productForm.foto_url && (
-                    <img src={productForm.foto_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
-                  )}
-                  <label className="flex-1 border-2 border-dashed border-gray-200 rounded-xl p-3 text-center text-sm text-gray-400 cursor-pointer hover:border-gray-400 transition-colors">
+              {/* Foto */}
+              <div>
+                <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'8px' }}>Foto del producto</label>
+                <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+                  {pForm.foto_url && <img src={pForm.foto_url} alt="" style={{ width:'72px', height:'72px', borderRadius:'14px', objectFit:'cover', flexShrink:0 }} />}
+                  <label style={{ flex:1, border:`2px dashed ${pForm.foto_url?bc:'#E4E6EA'}`, borderRadius:'14px', padding:'16px', textAlign:'center', cursor:'pointer', fontSize:'13px', color:'#9CA3AF' }}>
                     {uploading ? '⏳ Subiendo...' : '📷 Subir foto'}
-                    <input type="file" accept="image/*" className="hidden"
-                      onChange={async e => {
-                        const file = e.target.files?.[0]
-                        if (!file) return
-                        const url = await uploadPhoto(file)
-                        setProductForm(f => ({ ...f, foto_url: url }))
-                      }} />
+                    <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => { const f=e.target.files?.[0]; if(!f) return; const url=await uploadPhoto(f); setPForm(p=>({...p,foto_url:url})) }} />
                   </label>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-semibold text-gray-700">Activo</label>
-                <input type="checkbox" checked={productForm.activo}
-                  onChange={e => setProductForm(f => ({ ...f, activo: e.target.checked }))}
-                  className="w-4 h-4" />
+              {/* Nombre */}
+              <div>
+                <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Nombre *</label>
+                <input placeholder="Ej: Arepa Pollo y Queso Gouda" value={pForm.nombre} onChange={e=>setPForm(p=>({...p,nombre:e.target.value}))}
+                  style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
               </div>
 
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+              {/* Descripción */}
+              <div>
+                <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Descripción</label>
+                <textarea placeholder="Descripción breve del producto..." value={pForm.descripcion} onChange={e=>setPForm(p=>({...p,descripcion:e.target.value}))} rows={2}
+                  style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', resize:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
+              </div>
 
-              <button onClick={saveProduct} disabled={saving}
-                className="w-full py-3.5 rounded-xl text-white font-bold disabled:opacity-50 transition-all"
-                style={{ background: brandColor }}>
+              {/* Precio y descuento */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+                <div>
+                  <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Precio (RD$) *</label>
+                  <input type="number" placeholder="295" value={pForm.precio} onChange={e=>setPForm(p=>({...p,precio:e.target.value}))}
+                    style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Descuento % (opcional)</label>
+                  <input type="number" placeholder="20" min="0" max="100" value={pForm.descuento_pct} onChange={e=>setPForm(p=>({...p,descuento_pct:e.target.value}))}
+                    style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
+                </div>
+              </div>
+
+              {/* Categoría */}
+              <div>
+                <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Categoría *</label>
+                <select value={pForm.category_id} onChange={e=>setPForm(p=>({...p,category_id:e.target.value}))}
+                  style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', background:'white', fontFamily:'var(--font-body)', boxSizing:'border-box' }}>
+                  <option value="">Seleccionar...</option>
+                  {categories.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>
+
+              {/* Switches */}
+              <div style={{ display:'flex', gap:'12px' }}>
+                {[{key:'activo',label:'Activo'},{key:'es_destacado',label:'⭐ Destacado'}].map(sw=>(
+                  <div key={sw.key} style={{ display:'flex', alignItems:'center', gap:'8px', background:'#F7F8FA', borderRadius:'12px', padding:'10px 14px', flex:1 }}>
+                    <span style={{ fontSize:'13px', fontWeight:600, color:'#374151', flex:1 }}>{sw.label}</span>
+                    <button onClick={()=>setPForm(p=>({...p,[sw.key]:!(p as any)[sw.key]}))}
+                      style={{ width:'44px', height:'24px', borderRadius:'999px', border:'none', cursor:'pointer', background:(pForm as any)[sw.key]?bc:'#E5E7EB', position:'relative', transition:'background 0.2s' }}>
+                      <span style={{ position:'absolute', top:'2px', left:(pForm as any)[sw.key]?'22px':'2px', width:'20px', height:'20px', borderRadius:'50%', background:'white', boxShadow:'0 1px 4px rgba(0,0,0,0.2)', transition:'left 0.2s', display:'block' }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {error && <p style={{ color:'#EF4444', fontSize:'13px', fontWeight:600 }}>{error}</p>}
+            </div>
+
+            <div style={{ padding:'16px 20px', borderTop:'1px solid #F3F4F6' }}>
+              <button onClick={saveProduct} disabled={saving} className="rpl"
+                style={{ width:'100%', padding:'16px', borderRadius:'14px', border:'none', background:saving?'#E4E6EA':bc, color:saving?'#9CA3AF':'white', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', cursor:saving?'not-allowed':'pointer', position:'relative' }}>
                 {saving ? 'Guardando...' : editingProduct ? 'Guardar cambios' : 'Crear producto'}
               </button>
             </div>
@@ -351,41 +345,32 @@ export default function AdminProductsPage() {
 
       {/* MODIFIER MANAGER */}
       {modifierProduct && (
-        <ModifierManager
-          productId={modifierProduct.id}
-          productName={modifierProduct.nombre}
-          brandColor={brandColor}
-          onClose={() => setModifierProduct(null)}
-        />
+        <ModifierManager productId={modifierProduct.id} productName={modifierProduct.nombre} brandColor={bc} onClose={()=>setModifierProduct(null)} />
       )}
 
       {/* CATEGORY FORM MODAL */}
       {showCatForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="font-black" style={{ fontFamily: 'Syne, serif' }}>
-                {editingCat ? 'Editar categoría' : 'Nueva categoría'}
-              </h2>
-              <button onClick={() => { setShowCatForm(false); setEditingCat(null) }} className="text-gray-400 text-xl">✕</button>
+        <div style={{ position:'fixed', inset:0, zIndex:50, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}
+          onClick={e=>{ if(e.target===e.currentTarget){setShowCatForm(false);setEditingCat(null)} }}>
+          <div style={{ background:'white', borderRadius:'20px', width:'100%', maxWidth:'400px', overflow:'hidden' }}>
+            <div style={{ padding:'20px', borderBottom:'1px solid #F3F4F6', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <h2 style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'18px', margin:0 }}>{editingCat?'Editar categoría':'Nueva categoría'}</h2>
+              <button onClick={()=>{setShowCatForm(false);setEditingCat(null)}} style={{ width:'32px', height:'32px', borderRadius:'50%', background:'#F3F4F6', border:'none', cursor:'pointer', fontSize:'18px', color:'#6B7280' }}>✕</button>
             </div>
-            <div className="p-4 space-y-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600">Nombre *</label>
-                <input placeholder="Ej: COMBOS ESPECIALES" value={catForm.nombre}
-                  onChange={e => setCatForm(f => ({ ...f, nombre: e.target.value.toUpperCase() }))}
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors" />
+            <div style={{ padding:'20px', display:'flex', flexDirection:'column', gap:'12px' }}>
+              <div>
+                <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Nombre *</label>
+                <input placeholder="Ej: COMBOS ESPECIALES" value={catForm.nombre} onChange={e=>setCatForm(f=>({...f,nombre:e.target.value.toUpperCase()}))}
+                  style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600">Descripción (opcional)</label>
-                <input placeholder="Descripción breve..." value={catForm.descripcion}
-                  onChange={e => setCatForm(f => ({ ...f, descripcion: e.target.value }))}
-                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors" />
+              <div>
+                <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Descripción (opcional)</label>
+                <input placeholder="Descripción breve..." value={catForm.descripcion} onChange={e=>setCatForm(f=>({...f,descripcion:e.target.value}))}
+                  style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
               </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <button onClick={saveCategory} disabled={saving}
-                className="w-full py-3.5 rounded-xl text-white font-bold disabled:opacity-50"
-                style={{ background: brandColor }}>
+              {error && <p style={{ color:'#EF4444', fontSize:'13px', fontWeight:600 }}>{error}</p>}
+              <button onClick={saveCategory} disabled={saving} className="rpl"
+                style={{ width:'100%', padding:'14px', borderRadius:'14px', border:'none', background:saving?'#E4E6EA':bc, color:saving?'#9CA3AF':'white', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'15px', cursor:saving?'not-allowed':'pointer', position:'relative' }}>
                 {saving ? 'Guardando...' : editingCat ? 'Guardar' : 'Crear categoría'}
               </button>
             </div>
