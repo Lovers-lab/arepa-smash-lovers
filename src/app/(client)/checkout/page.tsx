@@ -1,14 +1,17 @@
 'use client'
 
 export const dynamic = 'force-dynamic'
-import { createClient } from '@/lib/supabase/client'
-const supabase = createClient()
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Marca, CartItem } from '@/types'
 import { validateCardNumber, validateCardExpiry, formatCardNumber, formatCardExpiry } from '@/lib/utils/validators'
 import { formatRD, calculateShipping } from '@/lib/utils/formatters'
+import { createClient } from '@/lib/supabase/client'
+import BankSelector from '@/components/forms/BankSelector'
+import MapPicker from '@/components/map/MapPicker'
+
+const supabase = createClient()
 
 type Step = 'direccion' | 'pago' | 'confirmar'
 type MetodoPago = 'TARJETA' | 'TRANSFERENCIA'
