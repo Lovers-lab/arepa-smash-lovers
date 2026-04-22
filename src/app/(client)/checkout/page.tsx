@@ -1,4 +1,5 @@
 'use client'
+
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useRef } from 'react'
@@ -36,6 +37,7 @@ export default function CheckoutPage() {
   const [bankInfo, setBankInfo] = useState<any>(null)
   const [metodosActivos, setMetodosActivos] = useState({ tarjeta: true, transferencia: true })
   const [comprobante, setComprobante] = useState<File | null>(null)
+  const [selectedBank, setSelectedBank] = useState<any>(null)
   const [comprobantePreview, setComprobantePreview] = useState('')
 
   const [cardNombre, setCardNombre] = useState('')
@@ -281,18 +283,15 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {metodoPago === 'TRANSFERENCIA' && bankInfo && (
+            {metodoPago === 'TRANSFERENCIA' && (
               <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
-                <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm font-mono">
-                  {[['Banco', bankInfo.banco_nombre],['Cuenta', bankInfo.banco_cuenta],['Titular', bankInfo.banco_titular],['RUC', bankInfo.banco_ruc]].map(([l,v]) => (
-                    <div key={l} className="flex justify-between"><span className="text-gray-500">{l}:</span><span className="font-bold">{v}</span></div>
-                  ))}
-                  <div className="border-t border-gray-200 pt-2 flex justify-between">
-                    <span className="text-gray-500">Monto exacto:</span>
-                    <span className="font-black text-base" style={{ color: brandColor }}>{formatRD(total)}</span>
-                  </div>
-                </div>
-                {bankInfo.banco_instrucciones && <p className="text-xs text-gray-500">{bankInfo.banco_instrucciones}</p>}
+                <BankSelector
+                  marca={marca}
+                  totalAPagar={total}
+                  brandColor={brandColor}
+                  onBankSelected={(bank) => setSelectedBank(bank)}
+                  selectedBankId={selectedBank?.id}
+                />
                 <div>
                   <label className="text-sm font-semibold text-gray-700 block mb-2">📸 Foto del comprobante *</label>
                   <button onClick={() => fileRef.current?.click()}
@@ -328,7 +327,8 @@ export default function CheckoutPage() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <button onClick={() => {
               if (!metodoPago) { setError('Selecciona un método de pago'); return }
-              if (metodoPago === 'TRANSFERENCIA' && !comprobante) { setError('Sube el comprobante'); return }
+              if (metodoPago === 'TRANSFERENCIA' && !selectedBank) { setError('Selecciona un banco'); return }
+              if (metodoPago === 'TRANSFERENCIA' && !comprobante) { setError('Sube el comprobante de transferencia'); return }
               if (metodoPago === 'TARJETA' && !validateCard()) return
               setError(''); setStep('confirmar')
             }} disabled={!metodoPago}
