@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
 
 @tailwind base;
 @tailwind components;
@@ -177,4 +177,3 @@ h1, h2, h3, h4, h5 {
 input, textarea, select {
   font-family: var(--font-body);
 }
-/* force redeploy */
