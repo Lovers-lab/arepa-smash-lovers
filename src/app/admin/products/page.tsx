@@ -8,8 +8,8 @@ import ModifierManager from '@/components/menu/ModifierManager'
 const supabase = createClient()
 function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
 
-interface PForm { nombre: string; descripcion: string; precio: string; category_id: string; activo: boolean; foto_url: string; es_destacado: boolean; descuento: string }
-const EMPTY: PForm = { nombre: '', descripcion: '', precio: '', category_id: '', activo: true, foto_url: '', es_destacado: false, descuento: '' }
+interface PForm { nombre: string; descripcion: string; precio: string; category_id: string; activo: boolean; foto_url: string; es_destacado: boolean; descuento_pct: string }
+const EMPTY: PForm = { nombre: '', descripcion: '', precio: '', category_id: '', activo: true, foto_url: '', es_destacado: false, descuento_pct: '' }
 
 function ripple(e: React.MouseEvent<HTMLButtonElement>, c = 'rgba(255,255,255,0.4)') {
   const b = e.currentTarget, d = Math.max(b.clientWidth, b.clientHeight)
@@ -97,7 +97,7 @@ export default function AdminProductsPage() {
       activo: pForm.activo,
       foto_url: pForm.foto_url || null,
       es_destacado: pForm.es_destacado,
-      descuento: pForm.descuento ? parseFloat(pForm.descuento) : 0,
+      descuento_pct: pForm.descuento_pct ? parseFloat(pForm.descuento_pct) : 0,
     }
     if (editingProduct) {
       const { error: err } = await supabase.from('products').update(payload).eq('id', editingProduct.id)
@@ -143,7 +143,7 @@ export default function AdminProductsPage() {
       activo: p.activo,
       foto_url: p.foto_url || '',
       es_destacado: (p as any).es_destacado || false,
-      descuento: String((p as any).descuento || ''),
+      descuento_pct: String((p as any).descuento_pct || ''),
     })
     setShowProductForm(true)
   }
@@ -226,8 +226,8 @@ export default function AdminProductsPage() {
                     ? <img src={product.foto_url} alt={product.nombre} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                     : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'40px' }}>📷</div>
                   }
-                  {(product as any).descuento > 0 && (
-                    <div style={{ position:'absolute', top:'8px', left:'8px', background:'#F59E0B', color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>-{(product as any).descuento}%</div>
+                  {(product as any).descuento_pct > 0 && (
+                    <div style={{ position:'absolute', top:'8px', left:'8px', background:'#F59E0B', color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>-{(product as any).descuento_pct}%</div>
                   )}
                   {(product as any).es_destacado && (
                     <div style={{ position:'absolute', top:'8px', right:'8px', background:bc, color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>⭐ Top</div>
@@ -308,7 +308,7 @@ export default function AdminProductsPage() {
                 </div>
                 <div>
                   <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Descuento % (opcional)</label>
-                  <input type="number" placeholder="20" min="0" max="100" value={pForm.descuento} onChange={e=>setPForm(p=>({...p,descuento:e.target.value}))}
+                  <input type="number" placeholder="20" min="0" max="100" value={pForm.descuento_pct} onChange={e=>setPForm(p=>({...p,descuento_pct:e.target.value}))}
                     style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
                 </div>
               </div>
