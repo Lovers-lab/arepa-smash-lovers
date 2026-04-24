@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       .select('id, usado')
       .eq('user_id', userId)
       .eq('usado', false)
-      .gte('expira_at', new Date().toISOString())
+      .gte('fecha_expiracion', new Date().toISOString())
       .single()
 
     // (2x1 discount calculation omitted here for brevity — full logic: find 2 most expensive eligible items, discount cheapest)
