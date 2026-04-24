@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: '/admin/settings',               icon: '⚙️', label: 'Config' },
   { href: '/admin/settings/banks',          icon: '🏦', label: 'Bancos' },
   { href: '/admin/settings/users',         icon: '👥', label: 'Usuarios' },
+  { href: '/admin/clientes',               icon: '🧑‍🤝‍🧑', label: 'Clientes' },
 ]
 
 export default function AdminNav() {
