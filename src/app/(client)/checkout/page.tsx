@@ -66,29 +66,30 @@ export default function CheckoutPage() {
     const u = JSON.parse(storedUser)
     const cart = JSON.parse(storedCart)
     setUser(u); setItems(cart.items || []); setMarca(storedMarca)
-    const loyaltyOn = localStorage.getItem('lovers_loyalty_on') === '1'
-    localStorage.removeItem('lovers_loyalty_on')
     setBrandColor(storedMarca === 'SMASH' ? '#0052CC' : '#C41E3A')
     loadSettings(storedMarca)
     checkWelcome(u.id, storedMarca)
-    loadLoyalty(u.id, loyaltyOn)
+    loadLoyalty(u.id)
   }, [])
+
+  useEffect(() => {
+    if (loyaltySaldo > 0 && items.length > 0 && localStorage.getItem('lovers_loyalty_on') === '1') {
+      localStorage.removeItem('lovers_loyalty_on')
+      const sub = items.reduce((a: number, i: any) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0)
+      setUsarLoyalty(true)
+      setLoyaltyAplicado(Math.min(loyaltySaldo, sub))
+    }
+  }, [loyaltySaldo, items])
 
   async function loadSettings(m: Marca) {
     const { data: zoneData } = await supabase.from('delivery_zones').select('*').eq('activo', true).single()
     if (zoneData) setDeliveryZone(zoneData)
   }
 
-  async function loadLoyalty(userId: string, activar = false) {
+  async function loadLoyalty(userId: string) {
     const res = await fetch(`/api/loyalty/balance?userId=${userId}`)
     const data = await res.json()
-    const saldo = data.saldo || 0
-    setLoyaltySaldo(saldo)
-    if (activar && saldo > 0) {
-      setUsarLoyalty(true)
-      const subtotalActual = items.reduce((a: number, i: any) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0)
-      setLoyaltyAplicado(Math.min(saldo, subtotalActual))
-    }
+    setLoyaltySaldo(data.saldo || 0)
   }
 
   async function checkWelcome(userId: string, m: string) {
