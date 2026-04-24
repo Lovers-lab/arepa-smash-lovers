@@ -51,7 +51,7 @@ export default function MenuPage() {
     if (existing) { setPushGranted(true); return }
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      applicationServerKey: "BOYGrUbcWIt4l-gMGtNA0kSi3Ls1yxy0f7E2sq95RNG5UgcsZ817HzD-cGvE5C1JRaBKRBKEOqlGOkgIzBRs7vA"
     })
     await fetch('/api/push/subscribe', {
       method: 'POST',
