@@ -337,23 +337,6 @@ export default function MenuPage() {
         )}
       </main>
 
-      {/* INSTALL BANNER */}
-      {installPrompt && !appInstalled && (
-        <div style={{ position:'fixed', bottom: cartCount > 0 ? '100px' : '24px', left:'16px', right:'16px', zIndex:34, background:'white', borderRadius:'16px', padding:'14px 16px', boxShadow:'0 4px 24px rgba(0,0,0,0.12)', display:'flex', alignItems:'center', gap:'12px', animation:'slideUp 0.3s ease' }}>
-          <div style={{ fontSize:'24px' }}>📲</div>
-          <div style={{ flex:1 }}>
-            <div style={{ fontSize:'13px', fontWeight:800, color:'#1A1A1A' }}>Instala la app gratis</div>
-            <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'1px' }}>Gana RD$100 en cupón al instalar 🎁</div>
-          </div>
-          <button onClick={installApp}
-            style={{ padding:'8px 14px', borderRadius:'999px', border:'none', background:brandColors.primary, color:'white', fontSize:'12px', fontWeight:700, cursor:'pointer', flexShrink:0 }}>
-            Instalar
-          </button>
-          <button onClick={() => setInstallPrompt(null)}
-            style={{ width:'24px', height:'24px', borderRadius:'50%', border:'none', background:'#F3F4F6', color:'#9CA3AF', fontSize:'14px', cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
-        </div>
-      )}
-
       {/* PUSH BANNER */}
       {showPushBanner && !pushGranted && (
         <div style={{ position:'fixed', bottom: cartCount > 0 ? '100px' : '24px', left:'16px', right:'16px', zIndex:35, background:'white', borderRadius:'16px', padding:'14px 16px', boxShadow:'0 4px 24px rgba(0,0,0,0.12)', display:'flex', alignItems:'center', gap:'12px', animation:'slideUp 0.3s ease' }}>

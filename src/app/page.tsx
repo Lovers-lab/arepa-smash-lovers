@@ -47,12 +47,41 @@ export default function HomePage() {
   const [topSmash, setTopSmash] = useState<TopProduct[]>([])
   const [heroArepa, setHeroArepa] = useState<string>('')
   const [heroSmash, setHeroSmash] = useState<string>('')
+  const [installPrompt, setInstallPrompt] = useState<any>(null)
+  const [appInstalled, setAppInstalled] = useState(false)
+  const [installDismissed, setInstallDismissed] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem('lovers_user')
     if (!stored) { router.replace('/auth/login'); return }
     setUser(JSON.parse(stored))
     loadData()
+    // App install
+    if (typeof window !== 'undefined') {
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        setAppInstalled(true)
+      }
+      const dismissed = localStorage.getItem('install_dismissed')
+      if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) {
+        setInstallDismissed(true)
+      }
+      const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e) }
+      window.addEventListener('beforeinstallprompt', handler)
+      window.addEventListener('appinstalled', async () => {
+        setAppInstalled(true); setInstallPrompt(null)
+        const stored = localStorage.getItem('lovers_user')
+        if (stored) {
+          const u = JSON.parse(stored)
+          const res = await fetch('/api/app-install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: u.id, marca: localStorage.getItem('lovers_marca') || 'AREPA', accion: 'install' })
+          })
+          const data = await res.json()
+          if (data.cupon) alert('Tu cupon de RD$100 ya esta en tu billetera')
+        }
+      })
+    }
   }, [])
 
   async function loadData() {
@@ -67,6 +96,17 @@ export default function HomePage() {
     }
     if (sA?.hero_img_url) setHeroArepa(sA.hero_img_url)
     if (sS?.hero_img_url) setHeroSmash(sS.hero_img_url)
+  }
+
+  async function installApp() {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'dismissed') {
+      localStorage.setItem('install_dismissed', String(Date.now()))
+      setInstallDismissed(true)
+    }
+    setInstallPrompt(null)
   }
 
   function selectMarca(marca: Marca) {
@@ -114,6 +154,45 @@ export default function HomePage() {
           <span style={{ color:'rgba(255,255,255,0.5)', fontSize:'24px', position:'relative', zIndex:2 }}>›</span>
           {heroSmash && <img src={heroSmash} alt="" style={{ position:'absolute', right:'-8px', bottom:'-8px', height:'115px', objectFit:'contain', pointerEvents:'none', zIndex:1, filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.3))' }} />}
         </div>
+
+        {/* INSTALL CARD */}
+        {installPrompt && !appInstalled && !installDismissed && (
+          <div style={{
+            marginBottom:'20px', borderRadius:'20px', overflow:'hidden', position:'relative',
+            background:'linear-gradient(135deg, #FFF9E6 0%, #FFF3CC 100%)',
+            border:'1.5px solid #FFE082', boxShadow:'0 2px 16px rgba(255,193,7,0.15)'
+          }}>
+            <style>{`
+              @keyframes pulse-gift { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+              .gift-icon { animation: pulse-gift 2s ease-in-out infinite }
+            `}</style>
+            <div style={{ padding:'16px', display:'flex', alignItems:'center', gap:'14px' }}>
+              <div className="gift-icon" style={{ fontSize:'36px', flexShrink:0 }}>🎁</div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontFamily:'var(--font-display)', fontWeight:900, fontSize:'15px', color:'#1A1A1A' }}>
+                  Instala y gana RD$100
+                </div>
+                <div style={{ fontSize:'12px', color:'#92400E', marginTop:'2px', fontWeight:500 }}>
+                  Cupon valido en tu proxima compra · Solo por instalar la app
+                </div>
+                <div style={{ display:'flex', gap:'8px', marginTop:'10px' }}>
+                  <button onClick={installApp} style={{
+                    padding:'9px 20px', borderRadius:'999px', border:'none',
+                    background:'linear-gradient(135deg,#F59E0B,#D97706)',
+                    color:'white', fontSize:'13px', fontWeight:800, cursor:'pointer',
+                    boxShadow:'0 3px 12px rgba(245,158,11,0.4)'
+                  }}>
+                    Instalar gratis
+                  </button>
+                  <button onClick={() => { localStorage.setItem('install_dismissed', String(Date.now())); setInstallDismissed(true) }}
+                    style={{ padding:'9px 14px', borderRadius:'999px', border:'none', background:'rgba(0,0,0,0.06)', color:'#92400E', fontSize:'12px', fontWeight:600, cursor:'pointer' }}>
+                    Ahora no
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {topArepa.length > 0 && (
           <div style={{ marginBottom:'24px' }}>
