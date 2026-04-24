@@ -75,8 +75,10 @@ export default function MenuPage() {
     if (storedCart) { const p: Cart = JSON.parse(storedCart); if (p.marca === m) setCart(p) }
     loadMenu(m); loadBrandColors(m); loadLoyalty(u.id)
     setTimeout(() => {
-      if ('Notification' in window && Notification.permission !== 'denied') {
+      if ('Notification' in window && Notification.permission === 'default') {
         setShowPushBanner(true)
+      } else if ('Notification' in window && Notification.permission === 'granted') {
+        setPushGranted(true)
       }
     }, 1500)
   }, [])

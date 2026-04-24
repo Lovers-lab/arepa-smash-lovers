@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
   if (user_ids?.length) query = query.in('user_id', user_ids)
   const { data: subs } = await query
   if (!subs?.length) return NextResponse.json({ sent: 0 })
-  const payload = JSON.stringify({ title, body, url: url || '/', icon: icon || '/icons/icon-192.png' })
+  const iconUrl = icon || (marca === 'SMASH' ? 'https://arepa-smash-app.vercel.app/logos/logo-smash.png' : 'https://arepa-smash-app.vercel.app/logos/logo-arepa.png')
+  const payload = JSON.stringify({ title, body, url: url || '/', icon: iconUrl })
   let sent = 0
   for (const sub of subs) {
     try {
