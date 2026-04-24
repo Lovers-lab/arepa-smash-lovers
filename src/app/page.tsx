@@ -27,7 +27,10 @@ function TopRow({ items, color, onTap }: { items: TopProduct[]; color: string; o
           </div>
           <div style={{ padding:'8px 10px' }}>
             <div style={{ fontSize:'11px', fontWeight:800, color:'#1A1A1A', lineHeight:1.3 }}>{p.nombre}</div>
-            <div style={{ fontSize:'13px', fontWeight:900, color, marginTop:'4px' }}>{formatRD(p.precio)}</div>
+            <div style={{ display:'flex', alignItems:'baseline', gap:'5px', marginTop:'4px' }}>
+            <div style={{ fontSize:'13px', fontWeight:900, color }}>{p.descuento_pct > 0 ? formatRD(Math.round(p.precio * (1 - p.descuento_pct/100))) : formatRD(p.precio)}</div>
+            {p.descuento_pct > 0 && <div style={{ fontSize:'11px', fontWeight:600, color:'#9CA3AF', textDecoration:'line-through' }}>{formatRD(p.precio)}</div>}
+          </div>
           </div>
         </div>
       ))}
