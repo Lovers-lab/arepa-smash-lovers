@@ -39,7 +39,7 @@ export default function ClientesPage() {
     const [{ data: coupons }, { data: installs }, { data: orders }] = await Promise.all([
       supabase.from('user_coupons').select('*, coupon:coupons(*)').eq('user_id', c.id).order('created_at', { ascending: false }),
       supabase.from('app_installs').select('*').eq('user_id', c.id).order('created_at', { ascending: false }),
-      supabase.from('orders').select('id,total,marca,estado,created_at').eq('user_id', c.id).order('created_at', { ascending: false }).limit(10)
+      supabase.from('orders').select('id,total_pagado,marca,estado,fecha_orden').eq('user_id', c.id).order('created_at', { ascending: false }).limit(10)
     ])
     setUserCoupons(coupons || [])
     setUserInstalls(installs || [])
@@ -189,10 +189,10 @@ export default function ClientesPage() {
                   <div key={o.id} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #F3F4F6' }}>
                     <div>
                       <div style={{ fontSize:'13px', fontWeight:700 }}>#{o.id?.slice(-6).toUpperCase()} · {o.marca}</div>
-                      <div style={{ fontSize:'11px', color:'#9CA3AF' }}>{new Date(o.created_at).toLocaleDateString('es-DO')}</div>
+                      <div style={{ fontSize:'11px', color:'#9CA3AF' }}>{new Date(o.fecha_orden).toLocaleDateString('es-DO')}</div>
                     </div>
                     <div style={{ textAlign:'right' }}>
-                      <div style={{ fontSize:'13px', fontWeight:800, color:'#C41E3A' }}>{formatRD(o.total)}</div>
+                      <div style={{ fontSize:'13px', fontWeight:800, color:'#C41E3A' }}>{formatRD(o.total_pagado)}</div>
                       <div style={{ fontSize:'10px', color:'#9CA3AF' }}>{o.estado}</div>
                     </div>
                   </div>
