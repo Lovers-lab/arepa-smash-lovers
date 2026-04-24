@@ -42,6 +42,7 @@ export default function MenuPage() {
   const [modifierProduct, setModifierProduct] = useState<Product | null>(null)
   const [addedFeedback, setAddedFeedback] = useState<string | null>(null)
   const [pushGranted, setPushGranted] = useState(false)
+  const [showPushBanner, setShowPushBanner] = useState(false)
 
   async function subscribePush() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
@@ -73,6 +74,9 @@ export default function MenuPage() {
     setUser(u); setMarca(m)
     if (storedCart) { const p: Cart = JSON.parse(storedCart); if (p.marca === m) setCart(p) }
     loadMenu(m); loadBrandColors(m); loadLoyalty(u.id)
+    if ('Notification' in window && Notification.permission === 'default') {
+      setTimeout(() => setShowPushBanner(true), 3000)
+    }
   }, [])
 
   useEffect(() => {
@@ -295,6 +299,23 @@ export default function MenuPage() {
           </div>
         )}
       </main>
+
+      {/* PUSH BANNER */}
+      {showPushBanner && !pushGranted && (
+        <div style={{ position:'fixed', bottom: cartCount > 0 ? '100px' : '24px', left:'16px', right:'16px', zIndex:35, background:'white', borderRadius:'16px', padding:'14px 16px', boxShadow:'0 4px 24px rgba(0,0,0,0.12)', display:'flex', alignItems:'center', gap:'12px', animation:'slideUp 0.3s ease' }}>
+          <div style={{ fontSize:'24px' }}>🔔</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:'13px', fontWeight:800, color:'#1A1A1A' }}>Activa las notificaciones</div>
+            <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'1px' }}>Entérate de ofertas y el estado de tu pedido</div>
+          </div>
+          <button onClick={async () => { await subscribePush(); setShowPushBanner(false) }}
+            style={{ padding:'8px 14px', borderRadius:'999px', border:'none', background:brandColors.primary, color:'white', fontSize:'12px', fontWeight:700, cursor:'pointer', flexShrink:0 }}>
+            Activar
+          </button>
+          <button onClick={() => setShowPushBanner(false)}
+            style={{ width:'24px', height:'24px', borderRadius:'50%', border:'none', background:'#F3F4F6', color:'#9CA3AF', fontSize:'14px', cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+        </div>
+      )}
 
       {/* MODIFIER MODAL */}
       {modifierProduct && (
