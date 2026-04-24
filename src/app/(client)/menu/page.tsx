@@ -110,6 +110,7 @@ export default function MenuPage() {
     setTimeout(async () => {
       if (!('Notification' in window)) return
       if (Notification.permission === 'denied') return
+      if (localStorage.getItem('push_subscribed') === '1') { setPushGranted(true); return }
       if (Notification.permission === 'granted') {
         const reg = await navigator.serviceWorker.ready
         const existing = await reg.pushManager.getSubscription()
