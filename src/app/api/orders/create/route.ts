@@ -53,13 +53,13 @@ export async function POST(request: NextRequest) {
       .select('id, usado')
       .eq('user_id', userId)
       .eq('usado', false)
-      .gte('fecha_expiracion', new Date().toISOString())
+      .gte('expira_at', new Date().toISOString())
       .single()
 
     // (2x1 discount calculation omitted here for brevity — full logic: find 2 most expensive eligible items, discount cheapest)
 
     const montoFinal = Math.max(0, montoOriginal - descuento)
-    const costoEnvio = montoFinal >= 1000 ? 0 : 50
+    const costoEnvio = montoFinal >= 1000 ? 0 : 99
     const totalPagado = montoFinal + costoEnvio
 
     // 3. Get next order number
