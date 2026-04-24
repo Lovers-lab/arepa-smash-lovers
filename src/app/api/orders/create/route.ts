@@ -109,7 +109,8 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (orderError) {
-      return NextResponse.json({ error: 'Error creando orden' }, { status: 500 })
+      console.error('ORDER INSERT ERROR:', JSON.stringify(orderError))
+      return NextResponse.json({ error: orderError.message, details: orderError.details, hint: orderError.hint }, { status: 500 })
     }
 
     // 6. Insert order items
