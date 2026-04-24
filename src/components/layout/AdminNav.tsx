@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: '/admin/products',               icon: '📦', label: 'Menú' },
   { href: '/admin/marketing',              icon: '🎨', label: 'Colores' },
   { href: '/admin/marketing/influencers',  icon: '🎤', label: 'Influencers' },
+  { href: '/admin/marketing/push',          icon: '🔔', label: 'Push' },
   { href: '/admin/delivery-zones',         icon: '📍', label: 'Zonas' },
   { href: '/admin/reminders',              icon: '📅', label: 'Pagos' },
   { href: '/admin/settings',               icon: '⚙️', label: 'Config' },
