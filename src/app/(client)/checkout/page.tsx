@@ -1,5 +1,4 @@
 'use client'
-import ClientNav from '@/components/ClientNav'
 
 
 import { useState, useEffect, useRef } from 'react'
@@ -169,8 +168,7 @@ export default function CheckoutPage() {
 
   return (
     <div style={{ minHeight:'100dvh', background:'#F7F8FA', paddingBottom:'32px', fontFamily:'var(--font-body)' }}>
-      <ClientNav showBack={true} showHome={true} />
-      <style>{`@keyframes rpl{to{transform:scale(4);opacity:0}} .rpl{position:relative;overflow:hidden;}`}</style>
+          <style>{`@keyframes rpl{to{transform:scale(4);opacity:0}} .rpl{position:relative;overflow:hidden;}`}</style>
 
       <header style={{ background:'white', borderBottom:'1px solid #E4E6EA', position:'sticky', top:0, zIndex:30, boxShadow:'0 1px 8px rgba(0,0,0,0.06)' }}>
         <div style={{ maxWidth:'520px', margin:'0 auto', padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px' }}>

@@ -21,12 +21,7 @@ export default function ClientNav({ title, showBack = true, showHome = false, br
       {title && (
         <span style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', flex:1 }}>{title}</span>
       )}
-      {showHome && (
-        <button onClick={() => router.push('/')}
-          style={{ width:'36px', height:'36px', borderRadius:'50%', border:'none', background:'#F3F4F6', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginLeft:'auto' }}>
-          🏠
-        </button>
-      )}
+
     </div>
   )
 }
