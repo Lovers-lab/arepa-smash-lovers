@@ -222,7 +222,7 @@ export default function MenuPage() {
                           <div style={{ position:'absolute', top:'8px', left:'8px', background:'#FFD600', color:'#1A1A1A', fontSize:'13px', fontWeight:900, padding:'5px 12px', borderRadius:'999px', boxShadow:'0 2px 6px rgba(0,0,0,0.15)' }}>{descuento}% OFF</div>
                         )}
                         {esDestacado && (
-                          <div style={{ position:'absolute', top:'8px', right:'8px', background:brandColors.primary, color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>⭐ Top</div>
+                          <div style={{ position:'absolute', top:'8px', right:'8px', background:brandColors.primary, color:'white', fontSize:'13px', fontWeight:900, padding:'5px 12px', borderRadius:'999px', boxShadow:'0 2px 6px rgba(0,0,0,0.2)' }}>⭐ Top</div>
                         )}
                       </div>
 
