@@ -74,13 +74,20 @@ export default function CheckoutPage() {
   }, [])
 
   useEffect(() => {
-    if (loyaltyOnRef.current && loyaltySaldo > 0 && items.length > 0) {
+    if (loyaltyOnRef.current && loyaltySaldo > 0) {
       loyaltyOnRef.current = false
-      const sub = items.reduce((a: number, i: any) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0)
-      setUsarLoyalty(true)
-      setLoyaltyAplicado(Math.min(loyaltySaldo, sub))
+      // Calcular subtotal directo del localStorage para no depender del estado items
+      try {
+        const cartRaw = localStorage.getItem('lovers_cart')
+        const cartData = cartRaw ? JSON.parse(cartRaw) : null
+        const sub = cartData?.items?.reduce((a: number, i: any) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0) || 0
+        if (sub > 0) {
+          setUsarLoyalty(true)
+          setLoyaltyAplicado(Math.min(loyaltySaldo, sub))
+        }
+      } catch(e) { /* silencioso */ }
     }
-  }, [loyaltySaldo, items])
+  }, [loyaltySaldo])
 
   async function loadSettings(m: Marca) {
     const { data: zoneData } = await supabase.from('delivery_zones').select('*').eq('activo', true).single()
