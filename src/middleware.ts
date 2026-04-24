@@ -26,14 +26,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  if (pathname.startsWith('/admin')) {
-    if (!user) {
-      const loginUrl = new URL('/auth/login/admin', request.url)
-      loginUrl.searchParams.set('redirectTo', pathname)
-      return NextResponse.redirect(loginUrl)
-    }
-  }
-
+  // Admin auth via Supabase Auth not yet implemented - using local password
   return supabaseResponse
 }
 
