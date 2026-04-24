@@ -1,3 +1,4 @@
+import ClientNav from '@/components/ClientNav'
 'use client'
 
 export const dynamic = 'force-dynamic'
@@ -168,6 +169,7 @@ export default function CheckoutPage() {
 
   return (
     <div style={{ minHeight:'100dvh', background:'#F7F8FA', paddingBottom:'32px', fontFamily:'var(--font-body)' }}>
+      <ClientNav showBack={true} showHome={true} />
       <style>{`@keyframes rpl{to{transform:scale(4);opacity:0}} .rpl{position:relative;overflow:hidden;}`}</style>
 
       <header style={{ background:'white', borderBottom:'1px solid #E4E6EA', position:'sticky', top:0, zIndex:30, boxShadow:'0 1px 8px rgba(0,0,0,0.06)' }}>

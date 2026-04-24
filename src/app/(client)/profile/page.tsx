@@ -1,3 +1,4 @@
+import ClientNav from '@/components/ClientNav'
 'use client'
 
 export const dynamic = 'force-dynamic'
@@ -59,6 +60,7 @@ export default function ProfilePage() {
 
   if (loading) return (
     <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F8FA' }}>
+      <ClientNav showBack={true} showHome={true} />
       <p style={{ color: '#9CA3AF', fontSize: '14px', fontFamily: 'var(--font-body)' }}>Cargando...</p>
     </div>
   )

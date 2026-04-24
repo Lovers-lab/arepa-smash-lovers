@@ -1,3 +1,4 @@
+import ClientNav from '@/components/ClientNav'
 'use client'
 
 export const dynamic = 'force-dynamic'
@@ -80,6 +81,7 @@ export default function CartPage() {
 
   if (!items.length) return (
     <div style={{ minHeight:'100dvh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'16px', padding:'24px', background:'#F7F8FA', fontFamily:'var(--font-body)' }}>
+      <ClientNav showBack={true} showHome={true} />
       <span style={{ fontSize:'56px' }}>🛒</span>
       <p style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'18px', color:'#374151' }}>Tu carrito está vacío</p>
       <button onClick={() => router.push('/menu')} style={{ padding:'14px 32px', borderRadius:'999px', border:'none', background:brandColor, color:'white', fontFamily:'var(--font-display)', fontWeight:700, fontSize:'15px', cursor:'pointer' }}>
