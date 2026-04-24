@@ -1,5 +1,5 @@
-import ClientNav from '@/components/ClientNav'
 'use client'
+import ClientNav from '@/components/ClientNav'
 
 export const dynamic = 'force-dynamic'
 
