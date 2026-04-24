@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
         monto_final: montoFinal,
         costo_envio: costoEnvio,
         total_pagado: totalPagado,
+        loyalty_aplicado: loyaltyAplicado,
         notas_cliente: `${direccion}${notasCliente ? ' · ' + notasCliente : ''}`,
         comprobante_url: comprobanteUrl,
         fecha_orden: new Date().toISOString(),
