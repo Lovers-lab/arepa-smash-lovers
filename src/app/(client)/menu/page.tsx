@@ -107,12 +107,16 @@ export default function MenuPage() {
         }
       }
     })
-    setTimeout(() => {
-      if ('Notification' in window && Notification.permission === 'default') {
-        setShowPushBanner(true)
-      } else if ('Notification' in window && Notification.permission === 'granted') {
-        setPushGranted(true)
+    setTimeout(async () => {
+      if (!('Notification' in window)) return
+      if (Notification.permission === 'denied') return
+      if (Notification.permission === 'granted') {
+        // Verificar si ya tiene suscripcion activa
+        const reg = await navigator.serviceWorker.ready
+        const existing = await reg.pushManager.getSubscription()
+        if (existing) { setPushGranted(true); return }
       }
+      setShowPushBanner(true)
     }, 1500)
   }, [])
 
