@@ -30,6 +30,14 @@ export const viewport: Viewport = {
   maximumScale: 1,
 }
 
+'use client'
+// SW Registration
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(console.error)
+  })
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${outfit.variable} ${jakarta.variable}`}>
