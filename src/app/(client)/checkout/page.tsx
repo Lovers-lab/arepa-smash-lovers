@@ -66,6 +66,10 @@ export default function CheckoutPage() {
     const u = JSON.parse(storedUser)
     const cart = JSON.parse(storedCart)
     setUser(u); setItems(cart.items || []); setMarca(storedMarca)
+    if (localStorage.getItem('lovers_loyalty_on') === '1') {
+      setUsarLoyalty(true)
+      localStorage.removeItem('lovers_loyalty_on')
+    }
     setBrandColor(storedMarca === 'SMASH' ? '#0052CC' : '#C41E3A')
     loadSettings(storedMarca)
     checkWelcome(u.id, storedMarca)

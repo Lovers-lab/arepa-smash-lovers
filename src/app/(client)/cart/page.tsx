@@ -192,7 +192,7 @@ export default function CartPage() {
       </main>
 
       <div style={{ position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)', zIndex:40, width:'100%', maxWidth:'520px', padding:'0 16px' }}>
-        <button onClick={() => router.push('/checkout')} className="md-ripple"
+        <button onClick={() => (() => { localStorage.setItem('lovers_loyalty_on', usarLoyalty ? '1' : '0'); router.push('/checkout'); })()} className="md-ripple"
           style={{ width:'100%', padding:'18px 24px', borderRadius:'20px', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, boxShadow:`0 8px 32px ${brandColor}50`, position:'relative' }}>
           <span style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'15px', color:'white' }}>Ir al checkout</span>
           <span style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'17px', color:'white' }}>{formatRD(total)} →</span>
