@@ -111,10 +111,26 @@ export default function MenuPage() {
       if (!('Notification' in window)) return
       if (Notification.permission === 'denied') return
       if (Notification.permission === 'granted') {
-        // Verificar si ya tiene suscripcion activa
         const reg = await navigator.serviceWorker.ready
         const existing = await reg.pushManager.getSubscription()
         if (existing) { setPushGranted(true); return }
+        // Permiso ya dado pero sin suscripcion - resuscribir silenciosamente
+        try {
+          const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: "BOYGrUbcWIt4l-gMGtNA0kSi3Ls1yxy0f7E2sq95RNG5UgcsZ817HzD-cGvE5C1JRaBKRBKEOqlGOkgIzBRs7vA"
+          })
+          const stored = localStorage.getItem('lovers_user')
+          if (stored) {
+            const u2 = JSON.parse(stored)
+            await fetch('/api/push/subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ subscription: sub, user_id: u2.id, marca: localStorage.getItem('lovers_marca') || 'AREPA' })
+            })
+          }
+          setPushGranted(true); return
+        } catch(e) { /* silencioso */ }
       }
       setShowPushBanner(true)
     }, 1500)
