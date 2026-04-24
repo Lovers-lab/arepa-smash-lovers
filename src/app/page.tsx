@@ -7,8 +7,9 @@ import { createClient } from '@/lib/supabase/client'
 type Marca = 'AREPA' | 'SMASH'
 interface TopProduct { id: string; nombre: string; precio: number; foto_url: string | null; descuento_pct: number; es_destacado: boolean; marca: Marca }
 
+function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
+
 function TopRow({ items, color, onTap }: { items: TopProduct[]; color: string; onTap: () => void }) {
-  function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
   return (
     <div style={{ display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'4px', scrollbarWidth:'none' }}>
       {items.map((p) => (
@@ -28,9 +29,9 @@ function TopRow({ items, color, onTap }: { items: TopProduct[]; color: string; o
           <div style={{ padding:'8px 10px' }}>
             <div style={{ fontSize:'11px', fontWeight:800, color:'#1A1A1A', lineHeight:1.3 }}>{p.nombre}</div>
             <div style={{ display:'flex', alignItems:'baseline', gap:'5px', marginTop:'4px' }}>
-            <div style={{ fontSize:'13px', fontWeight:900, color }}>{p.descuento_pct > 0 ? formatRD(Math.round(p.precio * (1 - p.descuento_pct/100))) : formatRD(p.precio)}</div>
-            {p.descuento_pct > 0 && <div style={{ fontSize:'11px', fontWeight:600, color:'#9CA3AF', textDecoration:'line-through' }}>{formatRD(p.precio)}</div>}
-          </div>
+              <div style={{ fontSize:'13px', fontWeight:900, color }}>{p.descuento_pct > 0 ? formatRD(Math.round(p.precio * (1 - p.descuento_pct/100))) : formatRD(p.precio)}</div>
+              {p.descuento_pct > 0 && <div style={{ fontSize:'11px', fontWeight:600, color:'#9CA3AF', textDecoration:'line-through' }}>{formatRD(p.precio)}</div>}
+            </div>
           </div>
         </div>
       ))}
@@ -44,27 +45,28 @@ export default function HomePage() {
   const [user, setUser] = useState<{ nombre: string } | null>(null)
   const [topArepa, setTopArepa] = useState<TopProduct[]>([])
   const [topSmash, setTopSmash] = useState<TopProduct[]>([])
+  const [heroArepa, setHeroArepa] = useState<string>('')
+  const [heroSmash, setHeroSmash] = useState<string>('')
 
   useEffect(() => {
     const stored = localStorage.getItem('lovers_user')
     if (!stored) { router.replace('/auth/login'); return }
     setUser(JSON.parse(stored))
-    loadTop()
+    loadData()
   }, [])
 
-  async function loadTop() {
-    const { data } = await supabase
-      .from('products')
-      .select('id, nombre, precio, foto_url, descuento_pct, es_destacado, marca')
-      .eq('activo', true)
-      .or('es_destacado.eq.true,descuento_pct.gt.0')
-      .order('es_destacado', { ascending: false })
-      .order('descuento_pct', { ascending: false })
-      .limit(12)
-    if (data) {
-      setTopArepa(data.filter((p: any) => p.marca === 'AREPA').slice(0, 6) as TopProduct[])
-      setTopSmash(data.filter((p: any) => p.marca === 'SMASH').slice(0, 6) as TopProduct[])
+  async function loadData() {
+    const [{ data: prods }, { data: sA }, { data: sS }] = await Promise.all([
+      supabase.from('products').select('id, nombre, precio, foto_url, descuento_pct, es_destacado, marca').eq('activo', true).or('es_destacado.eq.true,descuento_pct.gt.0').order('es_destacado', { ascending: false }).order('descuento_pct', { ascending: false }).limit(12),
+      supabase.from('app_settings').select('hero_img_url').eq('marca', 'AREPA').single(),
+      supabase.from('app_settings').select('hero_img_url').eq('marca', 'SMASH').single(),
+    ])
+    if (prods) {
+      setTopArepa(prods.filter((p: any) => p.marca === 'AREPA').slice(0, 6) as TopProduct[])
+      setTopSmash(prods.filter((p: any) => p.marca === 'SMASH').slice(0, 6) as TopProduct[])
     }
+    if (sA?.hero_img_url) setHeroArepa(sA.hero_img_url)
+    if (sS?.hero_img_url) setHeroSmash(sS.hero_img_url)
   }
 
   function selectMarca(marca: Marca) {
@@ -88,23 +90,29 @@ export default function HomePage() {
       </div>
       <div style={{ padding:'20px 16px 0' }}>
         <p style={{ fontSize:'11px', fontWeight:800, letterSpacing:'0.8px', color:'#9CA3AF', textTransform:'uppercase', marginBottom:'12px' }}>Elige tu restaurante</p>
-        <div onClick={() => selectMarca('AREPA')} style={{ borderRadius:'20px', cursor:'pointer', marginBottom:'12px', background:'linear-gradient(135deg,#C41E3A,#E63946)', boxShadow:'0 4px 20px rgba(196,30,58,0.3)', padding:'20px', display:'flex', alignItems:'center', gap:'14px' }}>
-          <img src="/logos/logo-arepa.png" style={{ width:'60px', height:'60px', borderRadius:'16px', objectFit:'cover', flexShrink:0, boxShadow:'0 4px 12px rgba(0,0,0,0.2)' }} alt="Arepa Lovers" />
-          <div style={{ flex:1 }}>
+
+        {/* AREPA CARD */}
+        <div onClick={() => selectMarca('AREPA')} style={{ borderRadius:'20px', cursor:'pointer', marginBottom:'12px', background:'linear-gradient(135deg,#C41E3A,#E63946)', boxShadow:'0 4px 20px rgba(196,30,58,0.3)', padding:'20px', display:'flex', alignItems:'center', gap:'14px', position:'relative', overflow:'hidden' }}>
+          <img src="/logos/logo-arepa.png" style={{ width:'60px', height:'60px', borderRadius:'16px', objectFit:'cover', flexShrink:0, boxShadow:'0 4px 12px rgba(0,0,0,0.2)', position:'relative', zIndex:2 }} alt="Arepa Lovers" />
+          <div style={{ flex:1, position:'relative', zIndex:2 }}>
             <div style={{ fontFamily:'var(--font-display)', fontSize:'22px', fontWeight:800, color:'white' }}>Arepa Lovers</div>
             <div style={{ color:'rgba(255,255,255,0.7)', fontSize:'13px', marginTop:'2px' }}>Comida venezolana auténtica</div>
             <div style={{ background:'rgba(255,255,255,0.18)', color:'white', fontSize:'11px', fontWeight:700, padding:'3px 10px', borderRadius:'999px', marginTop:'6px', display:'inline-block' }}>⭐ 4.8 · 1,199 pedidos</div>
           </div>
-          <span style={{ color:'rgba(255,255,255,0.5)', fontSize:'24px' }}>›</span>
+          <span style={{ color:'rgba(255,255,255,0.5)', fontSize:'24px', position:'relative', zIndex:2 }}>›</span>
+          {heroArepa && <img src={heroArepa} alt="" style={{ position:'absolute', right:'-8px', bottom:'-8px', height:'115px', objectFit:'contain', pointerEvents:'none', zIndex:1, filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.3))' }} />}
         </div>
-        <div onClick={() => selectMarca('SMASH')} style={{ borderRadius:'20px', cursor:'pointer', marginBottom:'24px', background:'linear-gradient(135deg,#0052CC,#0066FF)', boxShadow:'0 4px 20px rgba(0,82,204,0.3)', padding:'20px', display:'flex', alignItems:'center', gap:'14px' }}>
-          <img src="/logos/logo-smash.png" style={{ width:'60px', height:'60px', borderRadius:'16px', objectFit:'cover', flexShrink:0, boxShadow:'0 4px 12px rgba(0,0,0,0.2)' }} alt="Smash Lovers" />
-          <div style={{ flex:1 }}>
+
+        {/* SMASH CARD */}
+        <div onClick={() => selectMarca('SMASH')} style={{ borderRadius:'20px', cursor:'pointer', marginBottom:'24px', background:'linear-gradient(135deg,#0052CC,#0066FF)', boxShadow:'0 4px 20px rgba(0,82,204,0.3)', padding:'20px', display:'flex', alignItems:'center', gap:'14px', position:'relative', overflow:'hidden' }}>
+          <img src="/logos/logo-smash.png" style={{ width:'60px', height:'60px', borderRadius:'16px', objectFit:'cover', flexShrink:0, boxShadow:'0 4px 12px rgba(0,0,0,0.2)', position:'relative', zIndex:2 }} alt="Smash Lovers" />
+          <div style={{ flex:1, position:'relative', zIndex:2 }}>
             <div style={{ fontFamily:'var(--font-display)', fontSize:'22px', fontWeight:800, color:'white' }}>Smash Lovers</div>
             <div style={{ color:'rgba(255,255,255,0.7)', fontSize:'13px', marginTop:'2px' }}>Smash burgers de autor</div>
             <div style={{ background:'rgba(255,255,255,0.18)', color:'white', fontSize:'11px', fontWeight:700, padding:'3px 10px', borderRadius:'999px', marginTop:'6px', display:'inline-block' }}>🆕 Nuevo · Lanzamiento</div>
           </div>
-          <span style={{ color:'rgba(255,255,255,0.5)', fontSize:'24px' }}>›</span>
+          <span style={{ color:'rgba(255,255,255,0.5)', fontSize:'24px', position:'relative', zIndex:2 }}>›</span>
+          {heroSmash && <img src={heroSmash} alt="" style={{ position:'absolute', right:'-8px', bottom:'-8px', height:'115px', objectFit:'contain', pointerEvents:'none', zIndex:1, filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.3))' }} />}
         </div>
 
         {topArepa.length > 0 && (
