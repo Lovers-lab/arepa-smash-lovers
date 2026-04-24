@@ -1,3 +1,4 @@
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 import type { Metadata, Viewport } from 'next'
 import { Outfit, Plus_Jakarta_Sans } from 'next/font/google'
 import '@/styles/globals.css'
