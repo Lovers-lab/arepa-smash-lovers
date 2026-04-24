@@ -70,7 +70,7 @@ export default function CartPage() {
   const subtotal = items.reduce((a, i) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0)
   const loyaltyDesc = usarLoyalty ? Math.min(loyaltySaldo, subtotal) : 0
   const totalPagar = subtotal - loyaltyDesc
-  const envio = totalPagar >= 500 ? 0 : 99
+  const envio = totalPagar >= 1000 ? 0 : 99
   const total = totalPagar + envio
 
   function toggleLoyalty(val: boolean) {

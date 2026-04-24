@@ -32,7 +32,7 @@ export function calculateLoyaltyEarned(amount: number): number {
   return Math.floor(amount / 10)
 }
 
-export function calculateShipping(subtotal: number, umbral = 1000, costo = 50): number {
+export function calculateShipping(subtotal: number, umbral = 1000, costo = 99): number {
   return subtotal >= umbral ? 0 : costo
 }
 
