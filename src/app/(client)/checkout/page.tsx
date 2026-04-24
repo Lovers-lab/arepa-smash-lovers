@@ -49,6 +49,7 @@ export default function CheckoutPage() {
   const [promoResult, setPromoResult] = useState<any>(null)
   const [checkingPromo, setCheckingPromo] = useState(false)
   const [loyaltySaldo, setLoyaltySaldo] = useState(0)
+  const loyaltyOnRef = useRef(false)
   const [usarLoyalty, setUsarLoyalty] = useState(false)
   const [loyaltyAplicado, setLoyaltyAplicado] = useState(0)
   const [hasGift, setHasGift] = useState(false)
@@ -73,8 +74,8 @@ export default function CheckoutPage() {
   }, [])
 
   useEffect(() => {
-    if (loyaltySaldo > 0 && items.length > 0 && localStorage.getItem('lovers_loyalty_on') === '1') {
-      localStorage.removeItem('lovers_loyalty_on')
+    if (loyaltyOnRef.current && loyaltySaldo > 0 && items.length > 0) {
+      loyaltyOnRef.current = false
       const sub = items.reduce((a: number, i: any) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0)
       setUsarLoyalty(true)
       setLoyaltyAplicado(Math.min(loyaltySaldo, sub))
