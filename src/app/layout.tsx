@@ -33,6 +33,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${outfit.variable} ${jakarta.variable}`}>
+      <ServiceWorkerRegister />
       <body>{children}</body>
     </html>
   )
