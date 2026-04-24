@@ -239,7 +239,14 @@ export default function MenuPage() {
 
                         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                           <div>
-                            <div style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', color:brandColors.primary }}>{formatRD(product.precio)}</div>
+                            <div style={{ display:'flex', alignItems:'baseline', gap:'6px' }}>
+                            <div style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', color:brandColors.primary }}>
+                              {descuento > 0 ? formatRD(Math.round(product.precio * (1 - descuento/100))) : formatRD(product.precio)}
+                            </div>
+                            {descuento > 0 && (
+                              <div style={{ fontFamily:'var(--font-display)', fontWeight:600, fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{formatRD(product.precio)}</div>
+                            )}
+                          </div>
                           </div>
 
                           {inCartQty > 0 ? (
