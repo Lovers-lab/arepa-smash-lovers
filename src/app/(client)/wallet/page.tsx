@@ -45,7 +45,7 @@ export default function WalletPage() {
       supabase.from('loyalty_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
       supabase.from('referral_codes').select('codigo, usos, credito_acumulado').eq('user_id', userId).single(),
       supabase.from('referral_codes').select('usos, credito_acumulado').eq('user_id', userId).single(),
-      supabase.from('influencer_codes').select('*').eq('activo', true).limit(5),
+      supabase.from('user_coupons').select('*, coupon:coupons(*)').eq('user_id', userId).eq('usado', false).order('created_at', { ascending: false }),
     ])
 
     setLoyalty(loy)
@@ -62,21 +62,7 @@ export default function WalletPage() {
       if (newCode) setReferralCode(newCode.codigo)
     }
 
-    // Build available coupons list
-    const cups = []
-    // Referral coupon
-    if (referralCode || refCode?.codigo) {
-      cups.push({
-        id: 'referral',
-        tipo: 'REFERIDO',
-        codigo: refCode?.codigo || userId.substring(0, 6).toUpperCase(),
-        descripcion: 'Comparte y gana 100 pts por cada amigo',
-        icono: '👥',
-        color: '#7C3AED',
-        bg: '#EDE9FE',
-      })
-    }
-    setAvailableCoupons(cups)
+    setAvailableCoupons(coupons || [])
     setLoading(false)
   }
 
