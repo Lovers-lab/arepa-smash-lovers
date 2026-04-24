@@ -169,6 +169,33 @@ export default function AdminSettingsPage() {
           ))}
         </Section>
 
+        {/* IMAGEN HERO */}
+        <Section title="Imagen flotante en el boton">
+          <p className="text-xs text-gray-400 mb-3">Sube un PNG con fondo transparente. Aparecera flotando en la tarjeta del restaurante en el home.</p>
+          <div className="flex items-center gap-4">
+            {settings.hero_img_url && (
+              <div className="w-24 h-20 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <img src={settings.hero_img_url} alt="Hero" className="w-full h-full object-contain" />
+              </div>
+            )}
+            <label className="flex-1 border-2 border-dashed border-gray-200 rounded-xl p-4 text-center cursor-pointer text-sm text-gray-400 block">
+              {settings.hero_img_url ? "Cambiar imagen PNG" : "Subir PNG fondo transparente"}
+              <input type="file" accept="image/png,image/webp" className="hidden" onChange={async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const ext = file.name.split(".").pop();
+                const path = `hero/${marca.toLowerCase()}-${Date.now()}.${ext}`;
+                await supabase.storage.from("product-photos").upload(path, file, { upsert: true });
+                const { data } = supabase.storage.from("product-photos").getPublicUrl(path);
+                set("hero_img_url", data.publicUrl);
+              }} />
+            </label>
+            {settings.hero_img_url && (
+              <button onClick={() => set("hero_img_url", "")} className="px-3 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold">Quitar</button>
+            )}
+          </div>
+        </Section>
+
         {/* SONIDO */}
         <Section title="🔔 Alertas Sonoras (Admin)">
           <Toggle label="Sonido activo" value={settings.sonido_activo} onChange={v => set('sonido_activo', v)} />
