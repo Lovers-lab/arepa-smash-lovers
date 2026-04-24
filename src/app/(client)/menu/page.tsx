@@ -164,7 +164,7 @@ export default function MenuPage() {
               <div style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', color:brandColors.primary, lineHeight:1 }}>
                 {marca === 'AREPA' ? 'Arepa Lovers' : 'Smash Lovers'}
               </div>
-              <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'2px' }}>Hola, {user?.nombre?.split(' ')[0]} 👋</div>
+              <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'2px' }}>Toca para cambiar ‹</div>
             </div>
           </button>
           <button onClick={() => router.push('/wallet')}
