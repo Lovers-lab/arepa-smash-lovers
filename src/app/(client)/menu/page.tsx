@@ -41,6 +41,24 @@ export default function MenuPage() {
   const [brandColors, setBrandColors] = useState({ primary: '#C41E3A', secondary: '#E63946' })
   const [modifierProduct, setModifierProduct] = useState<Product | null>(null)
   const [addedFeedback, setAddedFeedback] = useState<string | null>(null)
+  const [pushGranted, setPushGranted] = useState(false)
+
+  async function subscribePush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    const reg = await navigator.serviceWorker.ready
+    const existing = await reg.pushManager.getSubscription()
+    if (existing) { setPushGranted(true); return }
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    })
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub, user_id: user?.id, marca })
+    })
+    setPushGranted(true)
+  }
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const tabsRef = useRef<HTMLDivElement>(null)
   const isScrollingRef = useRef(false)
