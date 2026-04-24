@@ -301,18 +301,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
             )}
-
-            {loyaltySaldo > 0 && (
-              <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E4E6EA', padding:'16px' }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                    <div style={{ width:'42px', height:'42px', borderRadius:'12px', background:`${brandColor}12`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px' }}>💰</div>
-                    <div>
-                      <p style={{ fontWeight:800, fontSize:'14px', margin:'0 0 2px' }}>Usar Puntos Lovers</p>
-                      <p style={{ fontSize:'12px', color:'#9CA3AF', margin:0 }}>{loyaltySaldo} pts = {formatRD(loyaltySaldo)}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => toggleLoyalty(!usarLoyalty)}
                     style={{ width:'50px', height:'28px', borderRadius:'999px', border:'none', cursor:'pointer', background:usarLoyalty?'#10B981':'#E5E7EB', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
                     <span style={{ position:'absolute', top:'4px', left:usarLoyalty?'24px':'4px', width:'20px', height:'20px', borderRadius:'50%', background:'white', boxShadow:'0 1px 4px rgba(0,0,0,0.2)', transition:'left 0.2s', display:'block' }} />
                   </button>
