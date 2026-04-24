@@ -1,7 +1,6 @@
 'use client'
 import ClientNav from '@/components/ClientNav'
 
-export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -12,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import BankSelector from '@/components/forms/BankSelector'
 import MapPicker from '@/components/map/MapPicker'
 
+export const dynamic = 'force-dynamic'
 const supabase = createClient()
 
 type Step = 'direccion' | 'pago' | 'confirmar'
