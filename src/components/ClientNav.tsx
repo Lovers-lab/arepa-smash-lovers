@@ -8,7 +8,7 @@ interface Props {
   brandColor?: string
 }
 
-export default function ClientNav({ title, showBack = true, showHome = true, brandColor = '#C41E3A' }: Props) {
+export default function ClientNav({ title, showBack = true, showHome = false, brandColor = '#C41E3A' }: Props) {
   const router = useRouter()
   return (
     <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'12px 16px', background:'white', borderBottom:'1px solid #F3F4F6', position:'sticky', top:0, zIndex:50 }}>
