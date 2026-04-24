@@ -2,45 +2,68 @@
 export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+
 type Marca = 'AREPA' | 'SMASH'
-const TOP_AREPA = [
-  { n: 'Pollo y Gouda', p: 'RD$295', b: '⭐ #1', bg: '#FFF0F0', c: '#C41E3A' },
-  { n: 'Combo Enamorado', p: 'RD$876', b: '15% OFF', bg: '#FFF0F0', c: '#C41E3A' },
-  { n: 'Combo Feliz', p: 'RD$470', b: '25% OFF', bg: '#FFF0F0', c: '#C41E3A' },
-  { n: 'Cachapa Premium', p: 'RD$499', b: '', bg: '#FFF0F0', c: '#C41E3A' },
-]
-const TOP_SMASH = [
-  { n: 'Smash Clásico', p: 'RD$650', b: '⭐ #1', bg: '#F0F4FF', c: '#0052CC' },
-  { n: 'Double Smash', p: 'RD$780', b: '20% OFF', bg: '#F0F4FF', c: '#0052CC' },
-  { n: 'Smash Bacon', p: 'RD$720', b: '', bg: '#F0F4FF', c: '#0052CC' },
-  { n: 'Combo Smash', p: 'RD$850', b: '15% OFF', bg: '#F0F4FF', c: '#0052CC' },
-]
-function TopRow({ items, onTap }: { items: typeof TOP_AREPA, onTap: () => void }) {
+interface TopProduct { id: string; nombre: string; precio: number; foto_url: string | null; descuento_pct: number; es_destacado: boolean; marca: Marca }
+
+function TopRow({ items, color, onTap }: { items: TopProduct[]; color: string; onTap: () => void }) {
+  function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
   return (
     <div style={{ display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'4px', scrollbarWidth:'none' }}>
-      {items.map((p, i) => (
-        <div key={i} onClick={onTap} style={{ flex:'0 0 130px', background:'white', borderRadius:'14px', overflow:'hidden', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.07)' }}>
-          <div style={{ height:'88px', background:p.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'40px', position:'relative' }}>
-            {p.c === '#C41E3A' ? '🫓' : '🍔'}
-            {p.b && <div style={{ position:'absolute', top:'6px', left:'6px', background:'#FFD600', borderRadius:'50px', padding:'2px 7px', fontSize:'9px', fontWeight:900, color:'#1A1A1A' }}>{p.b}</div>}
+      {items.map((p) => (
+        <div key={p.id} onClick={onTap} style={{ flex:'0 0 130px', background:'white', borderRadius:'14px', overflow:'hidden', cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.07)' }}>
+          <div style={{ height:'88px', background: p.marca==='AREPA'?'#FFF0F0':'#F0F4FF', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'40px', position:'relative', overflow:'hidden' }}>
+            {p.foto_url
+              ? <img src={p.foto_url} alt={p.nombre} style={{ width:'100%', height:'100%', objectFit:'cover', position:'absolute', inset:0 }} />
+              : <span>{p.marca==='AREPA'?'🫓':'🍔'}</span>
+            }
+            {p.descuento_pct > 0 && (
+              <div style={{ position:'absolute', top:'6px', left:'6px', background:'#FFD600', borderRadius:'50px', padding:'2px 7px', fontSize:'9px', fontWeight:900, color:'#1A1A1A', zIndex:1 }}>{p.descuento_pct}% OFF</div>
+            )}
+            {p.es_destacado && p.descuento_pct === 0 && (
+              <div style={{ position:'absolute', top:'6px', left:'6px', background:color, borderRadius:'50px', padding:'2px 7px', fontSize:'9px', fontWeight:900, color:'white', zIndex:1 }}>⭐ Top</div>
+            )}
           </div>
           <div style={{ padding:'8px 10px' }}>
-            <div style={{ fontSize:'11px', fontWeight:800, color:'#1A1A1A', lineHeight:1.3 }}>{p.n}</div>
-            <div style={{ fontSize:'13px', fontWeight:900, color:p.c, marginTop:'4px' }}>{p.p}</div>
+            <div style={{ fontSize:'11px', fontWeight:800, color:'#1A1A1A', lineHeight:1.3 }}>{p.nombre}</div>
+            <div style={{ fontSize:'13px', fontWeight:900, color, marginTop:'4px' }}>{formatRD(p.precio)}</div>
           </div>
         </div>
       ))}
     </div>
   )
 }
+
 export default function HomePage() {
   const router = useRouter()
+  const supabase = createClient()
   const [user, setUser] = useState<{ nombre: string } | null>(null)
+  const [topArepa, setTopArepa] = useState<TopProduct[]>([])
+  const [topSmash, setTopSmash] = useState<TopProduct[]>([])
+
   useEffect(() => {
     const stored = localStorage.getItem('lovers_user')
     if (!stored) { router.replace('/auth/login'); return }
     setUser(JSON.parse(stored))
-  }, [router])
+    loadTop()
+  }, [])
+
+  async function loadTop() {
+    const { data } = await supabase
+      .from('products')
+      .select('id, nombre, precio, foto_url, descuento_pct, es_destacado, marca')
+      .eq('activo', true)
+      .or('es_destacado.eq.true,descuento_pct.gt.0')
+      .order('es_destacado', { ascending: false })
+      .order('descuento_pct', { ascending: false })
+      .limit(12)
+    if (data) {
+      setTopArepa(data.filter((p: any) => p.marca === 'AREPA').slice(0, 6) as TopProduct[])
+      setTopSmash(data.filter((p: any) => p.marca === 'SMASH').slice(0, 6) as TopProduct[])
+    }
+  }
+
   function selectMarca(marca: Marca) {
     const current = localStorage.getItem('lovers_marca') as Marca | null
     if (current && current !== marca) {
@@ -51,7 +74,9 @@ export default function HomePage() {
     localStorage.setItem('lovers_marca', marca)
     router.push('/menu')
   }
+
   if (!user) return null
+
   return (
     <main style={{ minHeight:'100dvh', background:'#F4F4F6', fontFamily:'var(--font-body)', paddingBottom:'32px' }}>
       <div style={{ background:'white', padding:'20px 20px 16px', borderBottom:'1px solid #EBEBEB' }}>
@@ -78,26 +103,33 @@ export default function HomePage() {
           </div>
           <span style={{ color:'rgba(255,255,255,0.5)', fontSize:'24px' }}>›</span>
         </div>
-        <div style={{ marginBottom:'24px' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-              <div style={{ width:'28px', height:'28px', background:'#C41E3A', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px' }}>🫓</div>
-              <span style={{ fontSize:'13px', fontWeight:800, color:'#1A1A1A' }}>Los más pedidos · Arepa Lovers</span>
+
+        {topArepa.length > 0 && (
+          <div style={{ marginBottom:'24px' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                <div style={{ width:'28px', height:'28px', background:'#C41E3A', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px' }}>🫓</div>
+                <span style={{ fontSize:'13px', fontWeight:800, color:'#1A1A1A' }}>Los más pedidos · Arepa Lovers</span>
+              </div>
+              <span onClick={() => selectMarca('AREPA')} style={{ fontSize:'12px', color:'#C41E3A', fontWeight:700, cursor:'pointer' }}>Ver todo ›</span>
             </div>
-            <span onClick={() => selectMarca('AREPA')} style={{ fontSize:'12px', color:'#C41E3A', fontWeight:700, cursor:'pointer' }}>Ver todo ›</span>
+            <TopRow items={topArepa} color="#C41E3A" onTap={() => selectMarca('AREPA')} />
           </div>
-          <TopRow items={TOP_AREPA} onTap={() => selectMarca('AREPA')} />
-        </div>
-        <div style={{ marginBottom:'24px' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-              <div style={{ width:'28px', height:'28px', background:'#0052CC', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px' }}>🍔</div>
-              <span style={{ fontSize:'13px', fontWeight:800, color:'#1A1A1A' }}>Los más pedidos · Smash Lovers</span>
+        )}
+
+        {topSmash.length > 0 && (
+          <div style={{ marginBottom:'24px' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                <div style={{ width:'28px', height:'28px', background:'#0052CC', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px' }}>🍔</div>
+                <span style={{ fontSize:'13px', fontWeight:800, color:'#1A1A1A' }}>Los más pedidos · Smash Lovers</span>
+              </div>
+              <span onClick={() => selectMarca('SMASH')} style={{ fontSize:'12px', color:'#0052CC', fontWeight:700, cursor:'pointer' }}>Ver todo ›</span>
             </div>
-            <span onClick={() => selectMarca('SMASH')} style={{ fontSize:'12px', color:'#0052CC', fontWeight:700, cursor:'pointer' }}>Ver todo ›</span>
+            <TopRow items={topSmash} color="#0052CC" onTap={() => selectMarca('SMASH')} />
           </div>
-          <TopRow items={TOP_SMASH} onTap={() => selectMarca('SMASH')} />
-        </div>
+        )}
+
         <p style={{ textAlign:'center', fontSize:'12px', color:'#9CA3AF', margin:'0 0 12px' }}>💰 Gana Puntos Lovers con cada pedido · RD$10 = 1 punto</p>
         <button onClick={() => { localStorage.clear(); router.push('/auth/login') }} style={{ display:'block', margin:'0 auto', background:'none', border:'none', color:'#D1D5DB', fontSize:'12px', cursor:'pointer', fontFamily:'var(--font-body)' }}>Cerrar sesión</button>
       </div>
