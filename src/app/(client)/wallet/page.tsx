@@ -74,9 +74,11 @@ export default function WalletPage() {
   }
 
   if (loading) return (
-    <div style={{ minHeight:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F7F8FA' }}>
+    <div style={{ minHeight:'100dvh', background:'#F7F8FA' }}>
       <ClientNav showBack={true} showHome={true} />
-      <p style={{ color:'#9CA3AF', fontFamily:'var(--font-body)' }}>Cargando billetera...</p>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', paddingTop:'40px' }}>
+        <p style={{ color:'#9CA3AF', fontFamily:'var(--font-body)' }}>Cargando billetera...</p>
+      </div>
     </div>
   )
 
