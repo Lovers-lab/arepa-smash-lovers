@@ -8,8 +8,8 @@ import ModifierManager from '@/components/menu/ModifierManager'
 const supabase = createClient()
 function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
 
-interface PForm { nombre: string; descripcion: string; precio: string; category_id: string; activo: boolean; foto_url: string; es_destacado: boolean; descuento_pct: string }
-const EMPTY: PForm = { nombre: '', descripcion: '', precio: '', category_id: '', activo: true, foto_url: '', es_destacado: false, descuento_pct: '' }
+interface PForm { nombre: string; descripcion: string; precio: string; category_id: string; activo: boolean; foto_url: string; es_destacado: boolean; descuento: string }
+const EMPTY: PForm = { nombre: '', descripcion: '', precio: '', category_id: '', activo: true, foto_url: '', es_destacado: false, descuento: '' }
 
 function ripple(e: React.MouseEvent<HTMLButtonElement>, c = 'rgba(255,255,255,0.4)') {
   const b = e.currentTarget, d = Math.max(b.clientWidth, b.clientHeight)
@@ -89,18 +89,24 @@ export default function AdminProductsPage() {
     if (!pForm.nombre.trim() || !pForm.precio || !pForm.category_id) { setError('Nombre, precio y categoría son requeridos'); return }
     setSaving(true); setError('')
     const payload = {
-      nombre: pForm.nombre.trim(), descripcion: pForm.descripcion.trim() || null,
-      precio: parseFloat(pForm.precio), category_id: pForm.category_id, marca,
-      activo: pForm.activo, foto_url: pForm.foto_url || null,
+      nombre: pForm.nombre.trim(),
+      descripcion: pForm.descripcion.trim() || null,
+      precio: parseFloat(pForm.precio),
+      category_id: pForm.category_id,
+      marca,
+      activo: pForm.activo,
+      foto_url: pForm.foto_url || null,
       es_destacado: pForm.es_destacado,
-      descuento_pct: pForm.descuento_pct ? parseFloat(pForm.descuento_pct) : 0,
+      descuento: pForm.descuento ? parseFloat(pForm.descuento) : 0,
     }
     if (editingProduct) {
-      await supabase.from('products').update(payload).eq('id', editingProduct.id)
+      const { error: err } = await supabase.from('products').update(payload).eq('id', editingProduct.id)
+      if (err) { setError('Error al guardar: ' + err.message); setSaving(false); return }
     } else {
       const catProds = products.filter(p => p.category_id === pForm.category_id)
       const max = Math.max(0, ...catProds.map(p => p.orden_en_categoria))
-      await supabase.from('products').insert({ ...payload, orden_en_categoria: max + 1 })
+      const { error: err } = await supabase.from('products').insert({ ...payload, orden_en_categoria: max + 1 })
+      if (err) { setError('Error al crear: ' + err.message); setSaving(false); return }
     }
     await load(marca); setShowProductForm(false); setEditingProduct(null); setPForm(EMPTY); setSaving(false)
   }
@@ -120,14 +126,25 @@ export default function AdminProductsPage() {
     setUploading(true)
     const ext = file.name.split('.').pop()
     const path = `products/${Date.now()}.${ext}`
-    await supabase.storage.from('product-photos').upload(path, file, { upsert: true })
+    const { error: upErr } = await supabase.storage.from('product-photos').upload(path, file, { upsert: true })
+    if (upErr) { setError('Error subiendo foto: ' + upErr.message); setUploading(false); return '' }
     const { data } = supabase.storage.from('product-photos').getPublicUrl(path)
-    setUploading(false); return data.publicUrl
+    setUploading(false)
+    return data.publicUrl
   }
 
   function openEdit(p: Product) {
     setEditingProduct(p)
-    setPForm({ nombre: p.nombre, descripcion: p.descripcion || '', precio: String(p.precio), category_id: p.category_id, activo: p.activo, foto_url: p.foto_url || '', es_destacado: (p as any).es_destacado || false, descuento_pct: String((p as any).descuento_pct || '') })
+    setPForm({
+      nombre: p.nombre,
+      descripcion: p.descripcion || '',
+      precio: String(p.precio),
+      category_id: p.category_id,
+      activo: p.activo,
+      foto_url: p.foto_url || '',
+      es_destacado: (p as any).es_destacado || false,
+      descuento: String((p as any).descuento || ''),
+    })
     setShowProductForm(true)
   }
 
@@ -138,7 +155,6 @@ export default function AdminProductsPage() {
     <div style={{ minHeight:'100dvh', background:'#F7F8FA', fontFamily:'var(--font-body)' }}>
       <style>{`@keyframes rpl{to{transform:scale(4);opacity:0}} .rpl{position:relative;overflow:hidden;}`}</style>
 
-      {/* HEADER */}
       <header style={{ background:'white', borderBottom:'1px solid #E4E6EA', position:'sticky', top:0, zIndex:20, boxShadow:'0 1px 8px rgba(0,0,0,0.06)' }}>
         <div style={{ maxWidth:'1100px', margin:'0 auto', padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'12px' }}>
           <h1 style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'20px', margin:0 }}>📦 Gestión de Menú</h1>
@@ -154,15 +170,12 @@ export default function AdminProductsPage() {
       </header>
 
       <div style={{ maxWidth:'1100px', margin:'0 auto', padding:'16px', display:'grid', gridTemplateColumns:'260px 1fr', gap:'16px' }}>
-
-        {/* LEFT: CATEGORIES */}
         <div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
             <span style={{ fontSize:'12px', fontWeight:700, color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.5px' }}>Categorías</span>
             <button onClick={() => { setShowCatForm(true); setEditingCat(null); setCatForm({ nombre:'', descripcion:'' }) }} className="rpl"
               style={{ padding:'7px 14px', borderRadius:'999px', border:'none', background:bc, color:'white', fontSize:'12px', fontWeight:700, cursor:'pointer', position:'relative' }}>+ Nueva</button>
           </div>
-
           {loading ? (
             <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
               {[1,2,3].map(i => <div key={i} style={{ height:'64px', background:'white', borderRadius:'14px', opacity:0.6 }} />)}
@@ -191,7 +204,6 @@ export default function AdminProductsPage() {
           )}
         </div>
 
-        {/* RIGHT: PRODUCTS */}
         <div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
             <div>
@@ -205,18 +217,17 @@ export default function AdminProductsPage() {
               </button>
             )}
           </div>
-
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:'12px' }}>
             {catProducts.map(product => (
               <div key={product.id}
-                style={{ background:'white', borderRadius:'18px', border:'1px solid #E4E6EA', overflow:'hidden', opacity:product.activo?1:0.55, boxShadow:'0 2px 8px rgba(0,0,0,0.04)', transition:'box-shadow 0.2s' }}>
+                style={{ background:'white', borderRadius:'18px', border:'1px solid #E4E6EA', overflow:'hidden', opacity:product.activo?1:0.55, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
                 <div style={{ position:'relative', height:'130px', background:'linear-gradient(135deg,#FEF3C7,#FDE68A)', overflow:'hidden' }}>
                   {product.foto_url
                     ? <img src={product.foto_url} alt={product.nombre} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                     : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'40px' }}>📷</div>
                   }
-                  {(product as any).descuento_pct > 0 && (
-                    <div style={{ position:'absolute', top:'8px', left:'8px', background:'#F59E0B', color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>-{(product as any).descuento_pct}%</div>
+                  {(product as any).descuento > 0 && (
+                    <div style={{ position:'absolute', top:'8px', left:'8px', background:'#F59E0B', color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>-{(product as any).descuento}%</div>
                   )}
                   {(product as any).es_destacado && (
                     <div style={{ position:'absolute', top:'8px', right:'8px', background:bc, color:'white', fontSize:'10px', fontWeight:800, padding:'3px 8px', borderRadius:'999px' }}>⭐ Top</div>
@@ -244,7 +255,6 @@ export default function AdminProductsPage() {
                 </div>
               </div>
             ))}
-
             {!loading && catProducts.length === 0 && activeCatId && (
               <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'48px 20px', color:'#9CA3AF' }}>
                 <p style={{ fontSize:'40px', marginBottom:'8px' }}>📦</p>
@@ -256,7 +266,6 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* PRODUCT FORM MODAL */}
       {showProductForm && (
         <div style={{ position:'fixed', inset:0, zIndex:50, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}
           onClick={e=>{ if(e.target===e.currentTarget){setShowProductForm(false);setEditingProduct(null)} }}>
@@ -266,34 +275,31 @@ export default function AdminProductsPage() {
               <button onClick={()=>{setShowProductForm(false);setEditingProduct(null)}} style={{ width:'32px', height:'32px', borderRadius:'50%', background:'#F3F4F6', border:'none', cursor:'pointer', fontSize:'18px', color:'#6B7280' }}>✕</button>
             </div>
             <div style={{ flex:1, overflowY:'auto', padding:'20px', display:'flex', flexDirection:'column', gap:'14px' }}>
-
-              {/* Foto */}
               <div>
                 <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'8px' }}>Foto del producto</label>
                 <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
                   {pForm.foto_url && <img src={pForm.foto_url} alt="" style={{ width:'72px', height:'72px', borderRadius:'14px', objectFit:'cover', flexShrink:0 }} />}
-                  <label style={{ flex:1, border:`2px dashed ${pForm.foto_url?bc:'#E4E6EA'}`, borderRadius:'14px', padding:'16px', textAlign:'center', cursor:'pointer', fontSize:'13px', color:'#9CA3AF' }}>
-                    {uploading ? '⏳ Subiendo...' : '📷 Subir foto'}
-                    <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => { const f=e.target.files?.[0]; if(!f) return; const url=await uploadPhoto(f); setPForm(p=>({...p,foto_url:url})) }} />
+                  <label style={{ flex:1, border:`2px dashed ${pForm.foto_url?bc:'#E4E6EA'}`, borderRadius:'14px', padding:'16px', textAlign:'center', cursor:'pointer', fontSize:'13px', color: uploading?bc:'#9CA3AF', fontWeight: uploading?700:400 }}>
+                    {uploading ? '⏳ Subiendo foto...' : pForm.foto_url ? '📷 Cambiar foto' : '📷 Subir foto'}
+                    <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
+                      const f = e.target.files?.[0]
+                      if (!f) return
+                      const url = await uploadPhoto(f)
+                      if (url) setPForm(p => ({ ...p, foto_url: url }))
+                    }} />
                   </label>
                 </div>
               </div>
-
-              {/* Nombre */}
               <div>
                 <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Nombre *</label>
                 <input placeholder="Ej: Arepa Pollo y Queso Gouda" value={pForm.nombre} onChange={e=>setPForm(p=>({...p,nombre:e.target.value}))}
                   style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
               </div>
-
-              {/* Descripción */}
               <div>
                 <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Descripción</label>
                 <textarea placeholder="Descripción breve del producto..." value={pForm.descripcion} onChange={e=>setPForm(p=>({...p,descripcion:e.target.value}))} rows={2}
                   style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', resize:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
               </div>
-
-              {/* Precio y descuento */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
                 <div>
                   <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Precio (RD$) *</label>
@@ -302,12 +308,10 @@ export default function AdminProductsPage() {
                 </div>
                 <div>
                   <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Descuento % (opcional)</label>
-                  <input type="number" placeholder="20" min="0" max="100" value={pForm.descuento_pct} onChange={e=>setPForm(p=>({...p,descuento_pct:e.target.value}))}
+                  <input type="number" placeholder="20" min="0" max="100" value={pForm.descuento} onChange={e=>setPForm(p=>({...p,descuento:e.target.value}))}
                     style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
                 </div>
               </div>
-
-              {/* Categoría */}
               <div>
                 <label style={{ fontSize:'12px', fontWeight:700, color:'#6B7280', display:'block', marginBottom:'6px' }}>Categoría *</label>
                 <select value={pForm.category_id} onChange={e=>setPForm(p=>({...p,category_id:e.target.value}))}
@@ -316,8 +320,6 @@ export default function AdminProductsPage() {
                   {categories.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
-
-              {/* Switches */}
               <div style={{ display:'flex', gap:'12px' }}>
                 {[{key:'activo',label:'Activo'},{key:'es_destacado',label:'⭐ Destacado'}].map(sw=>(
                   <div key={sw.key} style={{ display:'flex', alignItems:'center', gap:'8px', background:'#F7F8FA', borderRadius:'12px', padding:'10px 14px', flex:1 }}>
@@ -329,10 +331,8 @@ export default function AdminProductsPage() {
                   </div>
                 ))}
               </div>
-
-              {error && <p style={{ color:'#EF4444', fontSize:'13px', fontWeight:600 }}>{error}</p>}
+              {error && <p style={{ color:'#EF4444', fontSize:'13px', fontWeight:600, background:'#FEF2F2', padding:'10px 14px', borderRadius:'10px' }}>{error}</p>}
             </div>
-
             <div style={{ padding:'16px 20px', borderTop:'1px solid #F3F4F6' }}>
               <button onClick={saveProduct} disabled={saving} className="rpl"
                 style={{ width:'100%', padding:'16px', borderRadius:'14px', border:'none', background:saving?'#E4E6EA':bc, color:saving?'#9CA3AF':'white', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', cursor:saving?'not-allowed':'pointer', position:'relative' }}>
@@ -343,12 +343,10 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* MODIFIER MANAGER */}
       {modifierProduct && (
         <ModifierManager productId={modifierProduct.id} productName={modifierProduct.nombre} brandColor={bc} onClose={()=>setModifierProduct(null)} />
       )}
 
-      {/* CATEGORY FORM MODAL */}
       {showCatForm && (
         <div style={{ position:'fixed', inset:0, zIndex:50, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}
           onClick={e=>{ if(e.target===e.currentTarget){setShowCatForm(false);setEditingCat(null)} }}>
@@ -368,7 +366,7 @@ export default function AdminProductsPage() {
                 <input placeholder="Descripción breve..." value={catForm.descripcion} onChange={e=>setCatForm(f=>({...f,descripcion:e.target.value}))}
                   style={{ width:'100%', border:'2px solid #E4E6EA', borderRadius:'12px', padding:'12px 14px', fontSize:'14px', outline:'none', fontFamily:'var(--font-body)', boxSizing:'border-box' }} />
               </div>
-              {error && <p style={{ color:'#EF4444', fontSize:'13px', fontWeight:600 }}>{error}</p>}
+              {error && <p style={{ color:'#EF4444', fontSize:'13px', fontWeight:600, background:'#FEF2F2', padding:'10px 14px', borderRadius:'10px' }}>{error}</p>}
               <button onClick={saveCategory} disabled={saving} className="rpl"
                 style={{ width:'100%', padding:'14px', borderRadius:'14px', border:'none', background:saving?'#E4E6EA':bc, color:saving?'#9CA3AF':'white', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'15px', cursor:saving?'not-allowed':'pointer', position:'relative' }}>
                 {saving ? 'Guardando...' : editingCat ? 'Guardar' : 'Crear categoría'}
