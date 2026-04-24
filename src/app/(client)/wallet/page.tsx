@@ -84,6 +84,7 @@ export default function WalletPage() {
 
   return (
     <div style={{ minHeight:'100dvh', background:'#F7F8FA', paddingBottom:'32px', fontFamily:'var(--font-body)' }}>
+      <ClientNav showBack={true} showHome={true} />
       <style>{`@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}`}</style>
 
       {/* Header */}
