@@ -293,13 +293,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
             )}
-                    style={{ width:'50px', height:'28px', borderRadius:'999px', border:'none', cursor:'pointer', background:usarLoyalty?'#10B981':'#E5E7EB', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
-                    <span style={{ position:'absolute', top:'4px', left:usarLoyalty?'24px':'4px', width:'20px', height:'20px', borderRadius:'50%', background:'white', boxShadow:'0 1px 4px rgba(0,0,0,0.2)', transition:'left 0.2s', display:'block' }} />
-                  </button>
-                </div>
-                {usarLoyalty && <div style={{ marginTop:'10px', padding:'10px 14px', background:'#DCFCE7', borderRadius:'10px', fontSize:'13px', fontWeight:700, color:'#15803D' }}>✓ −{formatRD(loyaltyAplicado)} aplicado</div>}
-              </div>
-            )}
 
             <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E4E6EA', padding:'16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px' }}>
