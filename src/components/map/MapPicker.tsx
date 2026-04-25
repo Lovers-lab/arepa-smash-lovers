@@ -85,6 +85,7 @@ export default function MapPicker({ onLocationSelected, brandColor, zonaPoligono
         strokeWeight: 2,
         fillColor: brandColor,
         fillOpacity: 0.12,
+        clickable: false,
         map,
       })
     }
