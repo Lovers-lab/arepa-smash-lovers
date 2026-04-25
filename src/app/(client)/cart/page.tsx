@@ -132,16 +132,23 @@ export default function CartPage() {
         </div>
 
         {hasGift && (
-          <div style={{ background:'linear-gradient(135deg, #FFFBEB, #FEF3C7)', border:'1px solid #FDE68A', borderRadius:'16px', padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px', marginBottom:'12px' }}>
-            <span style={{ fontSize:'28px' }}>🎁</span>
-            <div>
-              <p style={{ fontWeight:800, fontSize:'14px', color:'#92400E', margin:'0 0 2px' }}>{giftNombre}</p>
-              <p style={{ fontSize:'12px', color:'#B45309', margin:0 }}>Se agrega automáticamente con tu primer plato fuerte</p>
+          <div style={{ background:'white', borderRadius:'20px', border:'1px solid #FDE68A', overflow:'hidden', marginBottom:'12px', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ background:'linear-gradient(135deg, #FFFBEB, #FEF3C7)', padding:'8px 16px', display:'flex', alignItems:'center', gap:'6px' }}>
+              <span style={{ fontSize:'14px' }}>🎁</span>
+              <p style={{ fontSize:'12px', fontWeight:700, color:'#92400E', margin:0 }}>Regalo de Bienvenida — Primera compra</p>
+            </div>
+            <div style={{ padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px' }}>
+              <div style={{ width:'56px', height:'56px', borderRadius:'14px', background:'#FFFBEB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'28px', flexShrink:0 }}>{marca === 'AREPA' ? '🧀' : '🍟'}</div>
+              <div style={{ flex:1 }}>
+                <p style={{ fontFamily:'var(--font-display)', fontWeight:700, fontSize:'14px', color:'#0D0F12', margin:'0 0 2px' }}>{marca === 'AREPA' ? 'Tequeños' : 'Papas Fritas'}</p>
+                <p style={{ fontSize:'12px', color:'#9CA3AF', margin:0 }}>Incluido con tu pedido</p>
+              </div>
+              <div style={{ background:'#10B981', color:'white', fontWeight:800, fontSize:'12px', padding:'6px 12px', borderRadius:'999px' }}>GRATIS 🎁</div>
             </div>
           </div>
         )}
 
-        {loyaltySaldo > 0 && (
+        {loyaltySaldo > 0 && !hasGift && (
           <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E4E6EA', padding:'16px', marginBottom:'12px' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>

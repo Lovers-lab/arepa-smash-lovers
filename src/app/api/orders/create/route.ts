@@ -46,17 +46,22 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // 2. Check 2x1 offer
-    let descuento = loyaltyAplicado
+    // 2. Check welcome offer (regalo físico, NO afecta el total)
     const { data: offer } = await supabase
       .from('welcome_offers')
       .select('id, usado')
       .eq('user_id', userId)
       .eq('usado', false)
-      .gte('fecha_expiracion', new Date().toISOString())
       .single()
 
-    // (2x1 discount calculation omitted here for brevity — full logic: find 2 most expensive eligible items, discount cheapest)
+    const isFirstOrder = !!offer
+
+    // 3. Calcular descuento — solo puntos O cupón, nunca ambos, nunca en primera compra
+    let descuento = 0
+    if (!isFirstOrder) {
+      // Solo uno puede tener valor, el frontend garantiza exclusividad
+      descuento = loyaltyAplicado || 0
+    }
 
     const montoFinal = Math.max(0, montoOriginal - descuento)
     const costoEnvio = montoFinal >= 1000 ? 0 : 99
@@ -119,8 +124,8 @@ export async function POST(request: NextRequest) {
       orderItemsData.map(item => ({ ...item, order_id: order.id }))
     )
 
-    // 7. Mark welcome offer as used if applied
-    if (offer && descuento > loyaltyAplicado) {
+    // 7. Mark welcome offer as used (regalo físico)
+    if (offer) {
       await supabase.from('welcome_offers').update({ usado: true, order_id: order.id, fecha_uso: new Date().toISOString() }).eq('id', offer.id)
     }
 
