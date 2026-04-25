@@ -231,9 +231,9 @@ export default function MapPicker({ onLocationSelected, brandColor, zonaPoligono
       </div>
 
       <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', border: '2px solid #E4E6EA', marginBottom: '12px' }}>
-        <div ref={mapRef} style={{ height: '280px', width: '100%', background: '#F0F2F5' }} />
+        <div ref={mapRef} style={{ height: '280px', width: '100%', background: '#F0F2F5', position: 'relative', zIndex: 1 }} />
         {!mapLoaded && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F8FA' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F8FA', zIndex: 10, pointerEvents: 'none' }}>
             <p style={{ color: '#9CA3AF', fontSize: '14px' }}>Cargando Google Maps...</p>
           </div>
         )}
