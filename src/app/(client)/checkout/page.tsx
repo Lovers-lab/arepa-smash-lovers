@@ -162,7 +162,14 @@ export default function CheckoutPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Error procesando el pedido'); setSubmitting(false); return }
       localStorage.removeItem('lovers_cart')
-      router.push(`/orders/${data.orderId}?success=1`)
+      const marca = localStorage.getItem('lovers_marca') || 'AREPA'
+        localStorage.setItem('lovers_active_order', JSON.stringify({
+          id: data.orderId,
+          numero: data.numeroPedido || data.orderId.substring(0,8),
+          estado: 'PENDIENTE',
+          marca: marca
+        }))
+        router.push('/')
     } catch { setError('Error de conexión. Intenta de nuevo.'); setSubmitting(false) }
   }
 
