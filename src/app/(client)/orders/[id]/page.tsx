@@ -99,7 +99,7 @@ export default function OrderTrackingPage() {
       {/* Header */}
       <header style={{ background: 'white', borderBottom: '1px solid #E4E6EA', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 20 }}>
         <div style={{ maxWidth: '520px', margin: '0 auto', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={() => router.push('/profile')}
+          <button onClick={() => router.back()}
             style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#F3F4F6', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', color: '#6B7280' }}>‹</button>
           <img src={brandLogo} style={{ width: '36px', height: '36px', borderRadius: '10px', objectFit: 'cover' }} alt="" />
           <div>
