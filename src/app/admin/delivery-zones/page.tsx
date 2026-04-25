@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 const supabase = createClient()
+const GMAPS_KEY = 'AIzaSyA4BFabr0k5BGhpVQQLldixCRQNHuoCZuM'
 
 interface Zone {
   id: string
@@ -19,18 +20,34 @@ export default function AdminDeliveryZonesPage() {
   const mapInstanceRef = useRef<any>(null)
   const polygonRef = useRef<any>(null)
   const markersRef = useRef<any[]>([])
+  const drawingManagerRef = useRef<any>(null)
   const [zone, setZone] = useState<Zone | null>(null)
   const [loading, setLoading] = useState(true)
   const [drawing, setDrawing] = useState(false)
   const [points, setPoints] = useState<Array<{ lat: number; lng: number }>>([])
   const [precio, setPrecio] = useState('99')
-  const [umbral, setUmbral] = useState('500')
+  const [umbral, setUmbral] = useState('1000')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
   const pointsRef = useRef<Array<{ lat: number; lng: number }>>([])
 
-  useEffect(() => { loadZone(); loadLeaflet() }, [])
+  useEffect(() => {
+    loadZone()
+    if ((window as any).google?.maps) { initMap(); return }
+    if (document.getElementById('gmaps-script')) { 
+      const wait = setInterval(() => {
+        if ((window as any).google?.maps) { clearInterval(wait); initMap() }
+      }, 100)
+      return
+    }
+    const script = document.createElement('script')
+    script.id = 'gmaps-script'
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=drawing,places&language=es`
+    script.async = true
+    script.onload = () => initMap()
+    document.head.appendChild(script)
+  }, [])
 
   async function loadZone() {
     const { data } = await supabase.from('delivery_zones').select('*').eq('activo', true).single()
@@ -45,53 +62,78 @@ export default function AdminDeliveryZonesPage() {
     setLoading(false)
   }
 
-  function loadLeaflet() {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link')
-      link.id = 'leaflet-css'
-      link.rel = 'stylesheet'
-      link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'
-      document.head.appendChild(link)
-    }
-    if ((window as any).L) { setTimeout(initMap, 100); return }
-    const script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'
-    script.onload = () => { setTimeout(initMap, 100); setMapLoaded(true) }
-    document.head.appendChild(script)
-  }
-
   function initMap() {
     if (!mapRef.current || mapInstanceRef.current) return
-    const L = (window as any).L
-    const map = L.map(mapRef.current, { center: [18.4793, -69.9318], zoom: 13 })
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map)
+    const google = (window as any).google
+
+    const map = new google.maps.Map(mapRef.current, {
+      center: { lat: 18.4793, lng: -69.9318 },
+      zoom: 13,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+      styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }]
+    })
+
     mapInstanceRef.current = map
     setMapLoaded(true)
-    if (pointsRef.current.length > 0) drawPolygon(pointsRef.current, map)
-    map.on('click', (e: any) => {
+
+    // Show existing polygon
+    if (pointsRef.current.length > 0) {
+      drawPolygonOnMap(pointsRef.current)
+    }
+
+    // Click to add points manually
+    map.addListener('click', (e: any) => {
       if (!drawingRef.current) return
-      const newPoint = { lat: e.latlng.lat, lng: e.latlng.lng }
+      const newPoint = { lat: e.latLng.lat(), lng: e.latLng.lng() }
       const updated = [...pointsRef.current, newPoint]
       pointsRef.current = updated
       setPoints([...updated])
-      drawPolygon(updated, map)
+      drawPolygonOnMap(updated)
+      addMarker(newPoint, updated.length)
     })
   }
 
   const drawingRef = useRef(false)
 
-  function drawPolygon(pts: Array<{ lat: number; lng: number }>, map?: any) {
-    const L = (window as any).L
-    const m = map || mapInstanceRef.current
-    if (!m || !L || pts.length < 2) return
-    if (polygonRef.current) polygonRef.current.remove()
-    markersRef.current.forEach(mk => mk.remove())
-    markersRef.current = []
-    polygonRef.current = L.polygon(pts.map(p => [p.lat, p.lng]), { color: '#C41E3A', fillColor: '#C41E3A', fillOpacity: 0.15, weight: 2 }).addTo(m)
-    pts.forEach((p, i) => {
-      const mk = L.circleMarker([p.lat, p.lng], { radius: 6, color: '#C41E3A', fillColor: 'white', fillOpacity: 1, weight: 2 }).addTo(m).bindTooltip(`${i + 1}`)
-      markersRef.current.push(mk)
+  function drawPolygonOnMap(pts: Array<{ lat: number; lng: number }>) {
+    const google = (window as any).google
+    const map = mapInstanceRef.current
+    if (!map || !google || pts.length < 2) return
+
+    if (polygonRef.current) polygonRef.current.setMap(null)
+
+    polygonRef.current = new google.maps.Polygon({
+      paths: pts,
+      strokeColor: '#C41E3A',
+      strokeOpacity: 0.9,
+      strokeWeight: 2,
+      fillColor: '#C41E3A',
+      fillOpacity: 0.15,
+      map,
     })
+  }
+
+  function addMarker(point: { lat: number; lng: number }, num: number) {
+    const google = (window as any).google
+    const map = mapInstanceRef.current
+    if (!map) return
+
+    const marker = new google.maps.Marker({
+      position: point,
+      map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 7,
+        fillColor: '#C41E3A',
+        fillOpacity: 1,
+        strokeColor: 'white',
+        strokeWeight: 2,
+      },
+      label: { text: String(num), color: 'white', fontSize: '9px', fontWeight: 'bold' },
+    })
+    markersRef.current.push(marker)
   }
 
   function startDrawing() {
@@ -99,23 +141,27 @@ export default function AdminDeliveryZonesPage() {
     setDrawing(true)
     pointsRef.current = []
     setPoints([])
-    if (polygonRef.current) polygonRef.current.remove()
-    markersRef.current.forEach(mk => mk.remove())
+    if (polygonRef.current) polygonRef.current.setMap(null)
+    markersRef.current.forEach(m => m.setMap(null))
     markersRef.current = []
-    if (mapInstanceRef.current) mapInstanceRef.current.getContainer().style.cursor = 'crosshair'
+    if (mapInstanceRef.current) mapInstanceRef.current.getDiv().style.cursor = 'crosshair'
   }
 
   function stopDrawing() {
     drawingRef.current = false
     setDrawing(false)
-    if (mapInstanceRef.current) mapInstanceRef.current.getContainer().style.cursor = ''
+    if (mapInstanceRef.current) mapInstanceRef.current.getDiv().style.cursor = ''
+    if (pointsRef.current.length >= 3) drawPolygonOnMap(pointsRef.current)
   }
 
   function undoLastPoint() {
     const updated = pointsRef.current.slice(0, -1)
     pointsRef.current = updated
     setPoints([...updated])
-    drawPolygon(updated)
+    const lastMarker = markersRef.current.pop()
+    if (lastMarker) lastMarker.setMap(null)
+    if (updated.length >= 2) drawPolygonOnMap(updated)
+    else if (polygonRef.current) polygonRef.current.setMap(null)
   }
 
   function clearAll() {
@@ -123,15 +169,19 @@ export default function AdminDeliveryZonesPage() {
     setPoints([])
     drawingRef.current = false
     setDrawing(false)
-    if (polygonRef.current) polygonRef.current.remove()
-    markersRef.current.forEach(mk => mk.remove())
+    if (polygonRef.current) polygonRef.current.setMap(null)
+    markersRef.current.forEach(m => m.setMap(null))
     markersRef.current = []
-    if (mapInstanceRef.current) mapInstanceRef.current.getContainer().style.cursor = ''
+    if (mapInstanceRef.current) mapInstanceRef.current.getDiv().style.cursor = ''
   }
 
   async function saveZone() {
     setSaving(true)
-    const payload = { precio_envio: parseFloat(precio), envio_gratis_umbral: parseFloat(umbral), poligono: pointsRef.current }
+    const payload = {
+      precio_envio: parseFloat(precio),
+      envio_gratis_umbral: parseFloat(umbral),
+      poligono: pointsRef.current
+    }
     if (zone) {
       await supabase.from('delivery_zones').update(payload).eq('id', zone.id)
     } else {
@@ -167,10 +217,10 @@ export default function AdminDeliveryZonesPage() {
 
         <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '14px 16px', marginBottom: '16px', fontSize: '13px', color: '#1E40AF', display: 'flex', gap: '10px' }}>
           <span style={{ fontSize: '18px', flexShrink: 0 }}>💡</span>
-          <div><strong>Cómo delimitar tu zona:</strong>
+          <div><strong>Cómo delimitar tu zona con Google Maps:</strong>
             <ol style={{ marginTop: '6px', paddingLeft: '16px', lineHeight: '1.8' }}>
               <li>Clic en <strong>"Dibujar zona"</strong></li>
-              <li>Toca los bordes de tu área de entrega en el mapa</li>
+              <li>Toca los bordes del área de entrega en el mapa</li>
               <li>Mínimo 3 puntos para cerrar el polígono</li>
               <li>Clic en <strong>"Listo"</strong> y luego <strong>"Guardar"</strong></li>
             </ol>
@@ -194,22 +244,22 @@ export default function AdminDeliveryZonesPage() {
           )}
           {points.length > 0 && (
             <button onClick={clearAll} style={{ padding: '10px 16px', background: '#FEE2E2', color: '#DC2626', border: 'none', borderRadius: '999px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
-              🗑 Borrar
+              🗑 Borrar todo
             </button>
           )}
         </div>
 
         {drawing && (
           <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '12px', padding: '10px 14px', marginBottom: '12px', fontSize: '13px', color: '#92400E', fontWeight: 600 }}>
-            🖱️ Toca el mapa para agregar puntos al perímetro...
+            🖱️ Toca el mapa para agregar puntos al perímetro de entrega...
           </div>
         )}
 
         <div style={{ borderRadius: '16px', overflow: 'hidden', border: '2px solid #E4E6EA', marginBottom: '16px', position: 'relative' }}>
-          <div ref={mapRef} style={{ height: '420px', width: '100%', background: '#F0F2F5' }} />
+          <div ref={mapRef} style={{ height: '450px', width: '100%', background: '#F0F2F5' }} />
           {!mapLoaded && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F8FA' }}>
-              <p style={{ color: '#9CA3AF' }}>Cargando mapa...</p>
+              <p style={{ color: '#9CA3AF' }}>Cargando Google Maps...</p>
             </div>
           )}
         </div>
