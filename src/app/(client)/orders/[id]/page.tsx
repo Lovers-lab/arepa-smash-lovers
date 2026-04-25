@@ -116,6 +116,16 @@ export default function OrderTrackingPage() {
 
       <main style={{ maxWidth: '520px', margin: '0 auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
+        {/* Botón volver al menú mientras pedido activo */}
+        {!isDelivered && !isCancelled && (
+          <button onClick={() => router.push('/menu')}
+            style={{ display:'flex', alignItems:'center', gap:'8px', padding:'12px 16px', background:'white', border:'1px solid #E4E6EA', borderRadius:'14px', cursor:'pointer', fontSize:'13px', fontWeight:700, color:'#6B7280', width:'100%' }}>
+            <span style={{ fontSize:'16px' }}>🛒</span>
+            <span>Seguir comprando mientras esperas</span>
+            <span style={{ marginLeft:'auto', fontSize:'16px' }}>›</span>
+          </button>
+        )}
+
         {/* Status card */}
         {!isCancelled && !isPending ? (
           <div style={{ background: 'white', borderRadius: '20px', border: '1px solid #E4E6EA', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
