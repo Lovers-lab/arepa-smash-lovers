@@ -152,7 +152,7 @@ export default function MapPicker({ onLocationSelected, brandColor, zonaPoligono
 
     if (addr) {
       setAddress(addr)
-      if (inside) onLocationSelected(lat, lng, addr)
+      onLocationSelected(lat, lng, addr)
     } else {
       reverseGeocode(lat, lng)
     }
@@ -166,8 +166,7 @@ export default function MapPicker({ onLocationSelected, brandColor, zonaPoligono
       const data = await res.json()
       const addr = data.results?.[0]?.formatted_address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`
       setAddress(addr)
-      const inside = pointInPolygon({ lat, lng }, zonaPoligono || [])
-      if (inside) onLocationSelected(lat, lng, addr)
+      onLocationSelected(lat, lng, addr)
     } catch {
       onLocationSelected(lat, lng, `${lat.toFixed(5)}, ${lng.toFixed(5)}`)
     }
