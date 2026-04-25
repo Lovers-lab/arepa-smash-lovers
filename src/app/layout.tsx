@@ -1,4 +1,6 @@
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
+import dynamic from 'next/dynamic'
+const OrderBanner = dynamic(() => import('@/components/OrderBanner'), { ssr: false })
 import type { Metadata, Viewport } from 'next'
 import { Outfit, Plus_Jakarta_Sans } from 'next/font/google'
 import '@/styles/globals.css'
