@@ -114,6 +114,25 @@ export default function AdminDashboard() {
       ...(estado === 'LISTO' ? { hora_listo: new Date().toISOString() } : {}),
       ...(estado === 'ENTREGADO' ? { hora_entregado: new Date().toISOString() } : {}),
     }).eq('id', id)
+
+    // Al entregar: crear job para enviar link de reseña en 30 minutos
+    if (estado === 'ENTREGADO') {
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('user_id, user:users(whatsapp)')
+        .eq('id', id)
+        .single()
+      if (orderData?.user) {
+        const scheduledAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
+        await supabase.from('review_jobs').insert({
+          order_id: id,
+          user_id: orderData.user_id,
+          whatsapp: (orderData.user as any).whatsapp,
+          scheduled_at: scheduledAt,
+          sent: false,
+        })
+      }
+    }
   }
 
   async function cancelOrder(id: string) {

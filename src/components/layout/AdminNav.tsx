@@ -10,6 +10,7 @@ const GROUPS = [
       { href: '/admin/dashboard',             label: 'Dashboard',     icon: 'dashboard' },
       { href: '/admin/orders',                label: 'Historial',     icon: 'receipt_long' },
       { href: '/admin/clientes',              label: 'Clientes',      icon: 'group' },
+      { href: '/admin/reviews',               label: 'Reseñas',       icon: 'star' },
     ],
   },
   {
@@ -43,6 +44,7 @@ const MOBILE_ITEMS = [
   { href: '/admin/orders',     label: 'Historial', icon: 'receipt_long' },
   { href: '/admin/products',   label: 'Menú',      icon: 'menu_book' },
   { href: '/admin/clientes',   label: 'Clientes',  icon: 'group' },
+  { href: '/admin/reviews',    label: 'Reseñas',   icon: 'star' },
   { href: '/admin/settings',   label: 'Config',    icon: 'settings' },
 ]
 
