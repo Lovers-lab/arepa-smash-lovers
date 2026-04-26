@@ -199,7 +199,7 @@ export default function AdminReviewsPage() {
             <p style={{ fontSize:'14px', color:'#9CA3AF', marginBottom:'20px' }}>Aparecerán cuando los clientes califiquen sus pedidos</p>
             <button onClick={() => setShowAddModal(true)}
               style={{ padding:'10px 20px', background:'#C41E3A', color:'white', border:'none', borderRadius:'10px', fontWeight:700, fontSize:'13px', cursor:'pointer' }}>
-              + Agregar primera reseña
+              + Nueva reseña
             </button>
           </div>
         ) : (
