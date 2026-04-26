@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 
 function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
+  return Math.floor(1000 + Math.random() * 9000).toString()
 }
 
 async function sendWhatsAppOTP(phone: string, code: string): Promise<boolean> {

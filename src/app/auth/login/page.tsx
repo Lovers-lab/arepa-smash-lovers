@@ -20,7 +20,7 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>('phone')
   const [phone, setPhone] = useState('')
   const [nombre, setNombre] = useState('')
-  const [otp, setOtp] = useState(['', '', '', '', '', ''])
+  const [otp, setOtp] = useState(['', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
   const [error, setError] = useState('')
@@ -83,13 +83,13 @@ export default function LoginPage() {
     newOtp[index] = digit
     setOtp(newOtp)
     setError('')
-    if (digit && index < 5) {
+    if (digit && index < 3) {
       otpRefs.current[index + 1]?.focus()
     }
     // Auto-verificar si todos los dígitos están completos
-    if (digit && index === 5) {
+    if (digit && index === 3) {
       const fullCode = [...newOtp.slice(0, 5), digit].join('')
-      if (fullCode.length === 6) verifyOTP(fullCode)
+      if (fullCode.length === 4) verifyOTP(fullCode)
     }
   }
 
@@ -99,15 +99,15 @@ export default function LoginPage() {
     }
     if (e.key === 'Enter') {
       const code = otp.join('')
-      if (code.length === 6) verifyOTP(code)
+      if (code.length === 4) verifyOTP(code)
     }
   }
 
   function handleOtpPaste(e: React.ClipboardEvent) {
     e.preventDefault()
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-    if (pasted.length === 6) {
-      setOtp(pasted.split(''))
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4)
+    if (pasted.length === 4) {
+      setOtp(pasted.slice(0,4).split(''))
       verifyOTP(pasted)
     }
   }
@@ -234,7 +234,7 @@ export default function LoginPage() {
                   <input
                     key={i}
                     ref={el => { otpRefs.current[i] = el }}
-                    type="tel" inputMode="numeric" maxLength={1}
+                    type="tel" inputMode="numeric" maxLength={1} autoComplete="one-time-code"
                     value={digit}
                     onChange={e => handleOtpChange(i, e.target.value)}
                     onKeyDown={e => handleOtpKeyDown(i, e)}
@@ -260,13 +260,13 @@ export default function LoginPage() {
                 </p>
               )}
 
-              <button onClick={() => verifyOTP(otp.join(''))} disabled={loading || otp.join('').length < 6}
-                style={{ width:'100%', padding:'16px', background:'linear-gradient(135deg, #C41E3A, #E63946)', color:'white', border:'none', borderRadius:'14px', fontFamily:'var(--font-display)', fontSize:'16px', fontWeight:700, cursor:'pointer', opacity: loading || otp.join('').length < 6 ? 0.5 : 1, boxShadow:'0 4px 20px rgba(196,30,58,0.3)', marginBottom:'12px' }}>
+              <button onClick={() => verifyOTP(otp.join(''))} disabled={loading || otp.join('').length < 4}
+                style={{ width:'100%', padding:'16px', background:'linear-gradient(135deg, #C41E3A, #E63946)', color:'white', border:'none', borderRadius:'14px', fontFamily:'var(--font-display)', fontSize:'16px', fontWeight:700, cursor:'pointer', opacity: loading || otp.join('').length < 4 ? 0.5 : 1, boxShadow:'0 4px 20px rgba(196,30,58,0.3)', marginBottom:'12px' }}>
                 Verificar código
               </button>
 
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <button onClick={() => { setStep('phone'); setOtp(['','','','','','']); setError('') }}
+                <button onClick={() => { setStep('phone'); setOtp(['','','','']); setError('') }}
                   style={{ background:'none', border:'none', color:'rgba(255,255,255,0.3)', fontSize:'12px', cursor:'pointer', fontFamily:'var(--font-body)' }}>
                   ← Cambiar número
                 </button>
