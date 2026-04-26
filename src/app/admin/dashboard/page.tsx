@@ -375,6 +375,7 @@ ${(order as any).direccion_texto ? `DIR:   ${(order as any).direccion_texto}` : 
                                   title="Imprimir comanda">
                                   🖨
                                 </button>
+                                {estado === 'LISTO' && (<><button onClick={() => solicitarRepartidor((order as any).id, false)} disabled={pyaLoading === (order as any).id} style={{ padding:'9px 12px', background:'#FF6B00', color:'white', border:'none', borderRadius:'8px', fontWeight:700, fontSize:'11px', cursor:'pointer' }}>🛵 Repartidor</button><button onClick={() => solicitarRepartidor((order as any).id, true)} disabled={pyaLoading === (order as any).id} style={{ padding:'9px 10px', background:'#EEF2FF', color:'#6366F1', border:'none', borderRadius:'8px', fontWeight:700, fontSize:'11px', cursor:'pointer' }}>🧪</button></>)}
                                 {/* Cancel */}
                                 {!['EN_CAMINO','ENTREGADO'].includes(estado) && (
                                   <button onClick={() => cancelOrder(order.id)}
