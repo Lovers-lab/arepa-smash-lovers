@@ -316,27 +316,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Carrusel reseñas */}
-          {reviews.length > 0 && (
-            <div ref={scrollRef} style={{ display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'20px', scrollbarWidth:'none', scrollBehavior:'smooth', marginLeft:'-24px', marginRight:'-24px', paddingLeft:'24px', paddingRight:'24px' }} className="reviews-side-scroll">
-              {loopedReviews.map((r, i) => (
-                <div key={i} style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'14px', flexShrink:0, width:'180px' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
-                    <div style={{ width:'26px', height:'26px', borderRadius:'7px', background: r.marca==='AREPA' ? 'rgba(196,30,58,0.3)' : 'rgba(0,82,204,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:800, color:'white', flexShrink:0 }}>
-                      {(r.nombre_cliente || 'C').charAt(0).toUpperCase()}
-                    </div>
-                    <span style={{ fontSize:'12px', fontWeight:600, color:'rgba(255,255,255,0.7)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.nombre_cliente || 'Cliente'}</span>
-                  </div>
-                  <StarRow n={r.estrellas} />
-                  {r.comentario && (
-                    <p style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:'8px 0 0', lineHeight:1.5, display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical' as any, overflow:'hidden' }}>
-                      "{r.comentario}"
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* ── PANEL DERECHO: FORMULARIO ── */}
@@ -461,6 +440,31 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
+
+        {/* ── CARRUSEL RESEÑAS MÓVIL (debajo del form) ── */}
+        {reviews.length > 0 && (
+          <div className="reviews-carousel" style={{ display:'none', paddingBottom:'32px' }}>
+            <p style={{ textAlign:'center', fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.25)', letterSpacing:'0.8px', textTransform:'uppercase', margin:'0 0 12px' }}>Lo que dicen nuestros clientes</p>
+            <div ref={scrollRef} style={{ display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'8px', scrollbarWidth:'none', scrollBehavior:'smooth', paddingLeft:'24px', paddingRight:'24px' }} className="reviews-side-scroll">
+              {loopedReviews.map((r, i) => (
+                <div key={i} style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'14px', flexShrink:0, width:'180px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
+                    <div style={{ width:'26px', height:'26px', borderRadius:'7px', background: r.marca==='AREPA' ? 'rgba(196,30,58,0.3)' : 'rgba(0,82,204,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:800, color:'white', flexShrink:0 }}>
+                      {(r.nombre_cliente || 'C').charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ fontSize:'12px', fontWeight:600, color:'rgba(255,255,255,0.7)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.nombre_cliente || 'Cliente'}</span>
+                  </div>
+                  <StarRow n={r.estrellas} />
+                  {r.comentario && (
+                    <p style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', margin:'8px 0 0', lineHeight:1.5, display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical' as any, overflow:'hidden' }}>
+                      "{r.comentario}"
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </main>
   )
