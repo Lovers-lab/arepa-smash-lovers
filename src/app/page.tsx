@@ -204,7 +204,7 @@ export default function HomePage() {
                     style={{ width:'100%', padding:'14px 16px', borderRadius:'16px', border:'none', background:bc, cursor:'pointer', display:'flex', alignItems:'center', gap:'12px', boxShadow:'0 2px 12px ' + bc + '40' }}>
                     <span style={{ fontSize:'22px' }}>{order.marca === 'SMASH' ? '🍔' : '🫓'}</span>
                     <div style={{ flex:1, textAlign:'left' }}>
-                      <p style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'14px', color:'white', margin:'0 0 2px' }}>Pedido #{order.numero}</p>
+                      <p style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'14px', color:'white', margin:'0 0 2px' }}>Pedido #{order.numero || order.numero_pedido}</p>
                       <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.8)', margin:0 }}>{estadoLabel[order.estado] || order.estado} · Toca para ver</p>
                     </div>
                     <span style={{ fontSize:'18px', color:'rgba(255,255,255,0.6)' }}>›</span>
