@@ -32,6 +32,7 @@ export default function OrderTrackingPage() {
   const [stars, setStars] = useState(0)
   const [comment, setComment] = useState('')
   const [reviewSent, setReviewSent] = useState(false)
+  const [tracking, setTracking] = useState<any>(null)
 
   useEffect(() => {
     loadOrder()
@@ -42,12 +43,23 @@ export default function OrderTrackingPage() {
     return () => { supabase.removeChannel(channel) }
   }, [id])
 
+  async function loadTracking(orderId: string) {
+    try {
+      const res = await fetch(`/api/pedidosya?orderId=${orderId}`)
+      const data = await res.json()
+      if (data.tracking) setTracking(data.tracking)
+    } catch {}
+  }
+
   async function loadOrder() {
     const { data } = await supabase.from('orders')
       .select('*, user:users(nombre, whatsapp), items:order_items(*, product:products(nombre, precio))')
       .eq('id', id).single()
     setOrder(data as Order)
     setLoading(false)
+    if ((data as any)?.estado === 'EN_CAMINO' && (data as any)?.pedidosya_shipping_id) {
+      loadTracking(id)
+    }
     const { data: review } = await supabase.from('reviews').select('id').eq('order_id', id).single()
     if (review) setReviewSent(true)
   }
@@ -154,6 +166,37 @@ export default function OrderTrackingPage() {
             <div style={{ fontSize: '48px', marginBottom: '12px' }}>❌</div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: '#DC2626', margin: '0 0 8px' }}>Pedido cancelado</h2>
             <p style={{ color: '#EF4444', fontSize: '13px', margin: 0 }}>Si pagaste con tarjeta, el reembolso se procesará en 3-5 días.</p>
+          </div>
+        )}
+
+        {/* Tracking PedidosYa — solo cuando está EN_CAMINO */}
+        {order.estado === 'EN_CAMINO' && (
+          <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E4E6EA', padding:'16px', display:'flex', flexDirection:'column', gap:'12px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+              <span style={{ fontSize:'24px', animation:'bounce 1s ease-in-out infinite' }}>🛵</span>
+              <div>
+                <p style={{ fontWeight:700, fontSize:'14px', margin:0, color:'#0D0F12' }}>Repartidor en camino</p>
+                {tracking?.repartidor ? (
+                  <p style={{ fontSize:'12px', color:'#6B7280', margin:'2px 0 0' }}>
+                    {tracking.repartidor.nombre} · {tracking.repartidor.telefono}
+                  </p>
+                ) : (
+                  <p style={{ fontSize:'12px', color:'#9CA3AF', margin:'2px 0 0' }}>Asignando repartidor...</p>
+                )}
+              </div>
+            </div>
+            {tracking?.trackingUrl && (
+              <a href={tracking.trackingUrl} target="_blank" rel="noreferrer"
+                style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'12px', background:brandColor, color:'white', borderRadius:'12px', fontWeight:700, fontSize:'14px', textDecoration:'none' }}>
+                📍 Ver ubicación en tiempo real
+              </a>
+            )}
+            {!tracking?.trackingUrl && (order as any).pedidosya_tracking_url && (
+              <a href={(order as any).pedidosya_tracking_url} target="_blank" rel="noreferrer"
+                style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'12px', background:brandColor, color:'white', borderRadius:'12px', fontWeight:700, fontSize:'14px', textDecoration:'none' }}>
+                📍 Ver ubicación en tiempo real
+              </a>
+            )}
           </div>
         )}
 

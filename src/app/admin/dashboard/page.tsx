@@ -48,6 +48,8 @@ export default function AdminDashboard() {
   const [sound, setSound] = useState(true)
   const [admin, setAdmin] = useState<{nombre:string;rol:string}|null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [pyaLoading, setPyaLoading] = useState<string|null>(null)
+  const [pyaResult, setPyaResult] = useState<Record<string,any>>({})
   const soundRef = useRef(sound)
   soundRef.current = sound
 
@@ -132,6 +134,43 @@ export default function AdminDashboard() {
           sent: false,
         })
       }
+    }
+  }
+
+  async function solicitarRepartidor(orderId: string, test = false) {
+    setPyaLoading(orderId)
+    try {
+      const res = await fetch('/api/pedidosya', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, test }),
+      })
+      const data = await res.json()
+      setPyaResult(p => ({ ...p, [orderId]: { ...data, test } }))
+      if (!test && data.success) {
+        alert('✅ Repartidor solicitado. Tracking: ' + data.trackingUrl)
+      } else if (test) {
+        alert('🧪 Prueba OK: ' + JSON.stringify(data.estimate || data, null, 2))
+      }
+    } catch (e: any) {
+      alert('Error: ' + e.message)
+    } finally {
+      setPyaLoading(null)
+    }
+  }
+
+  async function cancelarRepartidor(orderId: string) {
+    if (!confirm('¿Cancelar el repartidor de PedidosYa?')) return
+    setPyaLoading(orderId)
+    try {
+      const res = await fetch(`/api/pedidosya?orderId=${orderId}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) alert('✅ Envío cancelado')
+      else alert('Error: ' + JSON.stringify(data))
+    } catch (e: any) {
+      alert('Error: ' + e.message)
+    } finally {
+      setPyaLoading(null)
     }
   }
 

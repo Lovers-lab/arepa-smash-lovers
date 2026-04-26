@@ -10,6 +10,8 @@ export async function POST(request: NextRequest) {
     const marca = formData.get('marca') as string
     const metodoPago = formData.get('metodoPago') as string
     const direccion = formData.get('direccion') as string
+    const deliveryLat = formData.get('lat') ? parseFloat(formData.get('lat') as string) : null
+    const deliveryLng = formData.get('lng') ? parseFloat(formData.get('lng') as string) : null
     const notasCliente = formData.get('notasCliente') as string
     const loyaltyAplicado = Number(formData.get('loyaltyAplicado') || 0)
     const items: Array<{ productId: string; cantidad: number; notas?: string }> = JSON.parse(formData.get('items') as string)
@@ -108,6 +110,9 @@ export async function POST(request: NextRequest) {
         total_pagado: totalPagado,
         loyalty_aplicado: loyaltyAplicado,
         notas_cliente: `${direccion}${notasCliente ? ' · ' + notasCliente : ''}`,
+        direccion_texto: direccion,
+        delivery_lat: deliveryLat,
+        delivery_lng: deliveryLng,
         comprobante_url: comprobanteUrl,
         fecha_orden: new Date().toISOString(),
       })
