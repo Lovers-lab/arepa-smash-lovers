@@ -90,7 +90,10 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    const interval = setInterval(() => loadActiveOrders(u.id), 10000)
+    const stored = localStorage.getItem('lovers_user')
+    if (!stored) return
+    const userId = JSON.parse(stored).id
+    const interval = setInterval(() => loadActiveOrders(userId), 10000)
     return () => clearInterval(interval)
   }, [])
 
