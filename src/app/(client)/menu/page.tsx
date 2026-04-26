@@ -78,17 +78,21 @@ export default function MenuPage() {
     const storedUser = localStorage.getItem('lovers_user')
     const storedMarca = localStorage.getItem('lovers_marca') as Marca
     const storedCart = localStorage.getItem('lovers_cart')
-    // Sync desde cloud si hay usuario
+    // Sync carrito desde cloud en background
     if (storedUser) {
-      const u = JSON.parse(storedUser)
-      const cloudItems = await loadCartFromCloud(u.id, storedMarca || 'AREPA')
-      if (cloudItems && cloudItems.length > 0) {
-        const localCart = storedCart ? JSON.parse(storedCart) : null
-        // Si cloud tiene items y local no, o cloud es más reciente
-        if (!localCart || localCart.items?.length === 0) {
-          localStorage.setItem('lovers_cart', JSON.stringify({ marca: storedMarca || 'AREPA', items: cloudItems }))
-        }
-      }
+      const u = JSON.parse(storedUser);
+      (async () => {
+        try {
+          const cloudItems = await loadCartFromCloud(u.id, storedMarca || 'AREPA')
+          if (cloudItems && cloudItems.length > 0) {
+            const localCart = storedCart ? JSON.parse(storedCart) : null
+            if (!localCart || !localCart.items || localCart.items.length === 0) {
+              localStorage.setItem('lovers_cart', JSON.stringify({ marca: storedMarca || 'AREPA', items: cloudItems }))
+              setCart({ marca: storedMarca as Marca || 'AREPA', items: cloudItems })
+            }
+          }
+        } catch {}
+      })()
     }
     if (!storedUser) { router.replace('/auth/login'); return }
     const u = JSON.parse(storedUser)
