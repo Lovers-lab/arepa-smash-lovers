@@ -1,3 +1,4 @@
+export const revalidate = 60
 import { createAdminClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 
