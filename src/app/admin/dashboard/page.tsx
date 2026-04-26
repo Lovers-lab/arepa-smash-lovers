@@ -377,13 +377,7 @@ ${(order as any).direccion_texto ? `DIR:   ${(order as any).direccion_texto}` : 
                                 </button>
                                 {/* Cancel */}
                                 {!['EN_CAMINO','ENTREGADO'].includes(estado) && (
-                                  {(estado === 'EN_CAMINO' || estado === 'LISTO' || estado === 'ENVIO_SOLICITADO') && (
-                        <button onClick={() => updateStatus(order.id, 'ENTREGADO')}
-                          style={{ padding:'7px 12px', background:'#DCFCE7', color:'#15803D', border:'none', borderRadius:'8px', fontWeight:600, fontSize:'12px', cursor:'pointer' }}>
-                          ✅ Marcar entregado
-                        </button>
-                      )}
-                      <button onClick={() => cancelOrder(order.id)}
+                                  <button onClick={() => cancelOrder(order.id)}
                                     style={{ padding:'9px 10px', background:'#FEE2E2', color:'#DC2626', border:'none', borderRadius:'8px', fontWeight:600, fontSize:'12px', cursor:'pointer' }}
                                     title="Cancelar pedido">
                                     ✕
