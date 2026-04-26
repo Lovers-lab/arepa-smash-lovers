@@ -280,25 +280,47 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* ── CARRUSEL MÓVIL ── */}
-        <div className="reviews-carousel" style={{ display:'none', padding:'24px 0 0' }}>
-          {/* Logos + score */}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'12px', marginBottom:'16px', padding:'0 24px' }}>
-            <img src="/logos/logo-arepa.png" style={{ width:'48px', height:'48px', borderRadius:'12px', animation:'float 3s ease-in-out infinite' }} alt="" />
-            <img src="/logos/logo-smash.png" style={{ width:'48px', height:'48px', borderRadius:'12px', animation:'float 3s ease-in-out 0.5s infinite' }} alt="" />
-            {reviews.length > 0 && (
-              <div style={{ marginLeft:'8px' }}>
-                <div style={{ fontFamily:'var(--font-display)', fontWeight:900, fontSize:'28px', color:'white', lineHeight:1 }}>{avgScore.toFixed(1)} ⭐</div>
-                <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.35)' }}>{reviews.length} reseñas</div>
+        {/* ── HERO MÓVIL ── */}
+        <div className="reviews-carousel" style={{ display:'none', padding:'32px 24px 0' }}>
+          {/* Logos grandes — la marca es lo primero */}
+          <div style={{ display:'flex', justifyContent:'center', gap:'20px', marginBottom:'28px' }}>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'10px', animation:'float 3s ease-in-out infinite' }}>
+              <div style={{ position:'relative' }}>
+                <div style={{ position:'absolute', inset:'-8px', borderRadius:'28px', background:'rgba(196,30,58,0.25)', filter:'blur(16px)' }} />
+                <img src="/logos/logo-arepa.png" style={{ width:'120px', height:'120px', borderRadius:'24px', objectFit:'cover', boxShadow:'0 16px 48px rgba(196,30,58,0.5), 0 4px 16px rgba(0,0,0,0.4)', border:'2px solid rgba(255,255,255,0.12)', position:'relative', zIndex:1 }} alt="Arepa Lovers" />
               </div>
-            )}
+              <span style={{ color:'rgba(255,255,255,0.6)', fontSize:'11px', fontWeight:700, letterSpacing:'0.8px', textTransform:'uppercase' }}>Arepa Lovers</span>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'10px', animation:'float 3s ease-in-out 0.6s infinite' }}>
+              <div style={{ position:'relative' }}>
+                <div style={{ position:'absolute', inset:'-8px', borderRadius:'28px', background:'rgba(0,82,204,0.25)', filter:'blur(16px)' }} />
+                <img src="/logos/logo-smash.png" style={{ width:'120px', height:'120px', borderRadius:'24px', objectFit:'cover', boxShadow:'0 16px 48px rgba(0,82,204,0.5), 0 4px 16px rgba(0,0,0,0.4)', border:'2px solid rgba(255,255,255,0.12)', position:'relative', zIndex:1 }} alt="Smash Lovers" />
+              </div>
+              <span style={{ color:'rgba(255,255,255,0.6)', fontSize:'11px', fontWeight:700, letterSpacing:'0.8px', textTransform:'uppercase' }}>Smash Lovers</span>
+            </div>
           </div>
 
-          {/* Carrusel horizontal */}
+          {/* Score + promo */}
+          <div style={{ textAlign:'center', marginBottom:'20px' }}>
+            {reviews.length > 0 && (
+              <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'999px', padding:'8px 16px', marginBottom:'12px' }}>
+                <span style={{ fontFamily:'var(--font-display)', fontWeight:900, fontSize:'18px', color:'white' }}>{avgScore.toFixed(1)}</span>
+                <span style={{ fontSize:'14px' }}>⭐</span>
+                <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.4)' }}>{reviews.length} reseñas verificadas</span>
+              </div>
+            )}
+            <br/>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', background:'rgba(255,193,7,0.1)', border:'1px solid rgba(255,193,7,0.2)', borderRadius:'999px', padding:'8px 16px' }}>
+              <span style={{ fontSize:'14px' }}>🎁</span>
+              <span style={{ fontSize:'12px', fontWeight:600, color:'#FCD34D' }}>Regalo gratis en tu primera compra</span>
+            </div>
+          </div>
+
+          {/* Carrusel reseñas */}
           {reviews.length > 0 && (
-            <div ref={scrollRef} style={{ display:'flex', gap:'10px', overflowX:'auto', padding:'0 24px 16px', scrollbarWidth:'none', scrollBehavior:'smooth' }} className="reviews-side-scroll">
+            <div ref={scrollRef} style={{ display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'20px', scrollbarWidth:'none', scrollBehavior:'smooth', marginLeft:'-24px', marginRight:'-24px', paddingLeft:'24px', paddingRight:'24px' }} className="reviews-side-scroll">
               {loopedReviews.map((r, i) => (
-                <div key={i} className="review-card" style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'14px', flexShrink:0, width:'200px' }}>
+                <div key={i} style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'14px', flexShrink:0, width:'180px' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
                     <div style={{ width:'26px', height:'26px', borderRadius:'7px', background: r.marca==='AREPA' ? 'rgba(196,30,58,0.3)' : 'rgba(0,82,204,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:800, color:'white', flexShrink:0 }}>
                       {(r.nombre_cliente || 'C').charAt(0).toUpperCase()}
@@ -315,14 +337,6 @@ export default function LoginPage() {
               ))}
             </div>
           )}
-
-          {/* Promo pill */}
-          <div style={{ textAlign:'center', padding:'0 24px 16px' }}>
-            <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', background:'rgba(255,193,7,0.1)', border:'1px solid rgba(255,193,7,0.2)', borderRadius:'999px', padding:'8px 16px' }}>
-              <span style={{ fontSize:'14px' }}>🎁</span>
-              <span style={{ fontSize:'12px', fontWeight:600, color:'#FCD34D' }}>Regalo gratis en tu primera compra</span>
-            </div>
-          </div>
         </div>
 
         {/* ── PANEL DERECHO: FORMULARIO ── */}
