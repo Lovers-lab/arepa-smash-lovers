@@ -60,6 +60,7 @@ export default function HomePage() {
     setUser(u)
     loadData()
     loadActiveOrders(u.id)
+    // Polling cada 10s con userId
     // App install
     if (typeof window !== 'undefined') {
       if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -89,12 +90,18 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    const interval = setInterval(loadActiveOrders, 10000)
+    const interval = setInterval(() => loadActiveOrders(u.id), 10000)
     return () => clearInterval(interval)
   }, [])
 
-  async function loadActiveOrders() {
+  async function loadActiveOrders(userId?: string) {
     try {
+      // Si tenemos userId, cargar desde Supabase (cross-device)
+      if (userId) {
+        const cloudOrders = await loadActiveOrdersFromCloud(userId)
+        setActiveOrders(cloudOrders)
+        return
+      }
       const raw = localStorage.getItem('lovers_active_orders')
       if (!raw) { setActiveOrders([]); return }
       const orders = JSON.parse(raw)
