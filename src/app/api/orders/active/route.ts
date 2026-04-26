@@ -14,5 +14,7 @@ export async function GET(request: NextRequest) {
     .order('fecha_orden', { ascending: false })
     .limit(5)
 
-  return NextResponse.json({ orders: data || [] })
+  return NextResponse.json({ orders: data || [] }, {
+    headers: { 'Cache-Control': 'no-store, max-age=0' }
+  })
 }

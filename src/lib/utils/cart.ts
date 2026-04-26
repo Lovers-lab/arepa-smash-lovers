@@ -26,7 +26,7 @@ export async function loadCartFromCloud(userId: string, marca: string): Promise<
 // Cargar pedidos activos desde Supabase
 export async function loadActiveOrdersFromCloud(userId: string): Promise<any[]> {
   try {
-    const res = await fetch(`/api/orders/active?userId=${userId}`)
+    const res = await fetch(`/api/orders/active?userId=${userId}`, { cache: 'no-store' })
     const data = await res.json()
     return data.orders || []
   } catch {
