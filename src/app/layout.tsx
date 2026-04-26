@@ -1,6 +1,4 @@
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
-import dynamic from 'next/dynamic'
-const OrderBanner = dynamic(() => import('@/components/OrderBanner'), { ssr: false })
 import type { Metadata, Viewport } from 'next'
 import { Outfit, Plus_Jakarta_Sans } from 'next/font/google'
 import '@/styles/globals.css'
@@ -37,8 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={`${outfit.variable} ${jakarta.variable}`}>
       <ServiceWorkerRegister />
-      <body>{children}  <OrderBanner />
-      </body>
+      <body>{children}</body>
     </html>
   )
 }

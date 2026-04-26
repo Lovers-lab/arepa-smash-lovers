@@ -50,12 +50,14 @@ export default function HomePage() {
   const [installPrompt, setInstallPrompt] = useState<any>(null)
   const [appInstalled, setAppInstalled] = useState(false)
   const [installDismissed, setInstallDismissed] = useState(false)
+  const [activeOrders, setActiveOrders] = useState<any[]>([])
 
   useEffect(() => {
     const stored = localStorage.getItem('lovers_user')
     if (!stored) { router.replace('/auth/login'); return }
     setUser(JSON.parse(stored))
     loadData()
+    loadActiveOrders()
     // App install
     if (typeof window !== 'undefined') {
       if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -83,6 +85,31 @@ export default function HomePage() {
       })
     }
   }, [])
+
+  useEffect(() => {
+    const interval = setInterval(loadActiveOrders, 10000)
+    return () => clearInterval(interval)
+  }, [])
+
+  async function loadActiveOrders() {
+    try {
+      const raw = localStorage.getItem('lovers_active_orders')
+      if (!raw) { setActiveOrders([]); return }
+      const orders = JSON.parse(raw)
+      if (!orders.length) { setActiveOrders([]); return }
+      // Actualizar estados desde Supabase
+      const ids = orders.map((o: any) => o.id)
+      const { data } = await supabase.from('orders').select('id, numero_pedido, estado, marca').in('id', ids)
+      if (!data) return
+      // Filtrar entregados/cancelados
+      const updated = orders.map((o: any) => {
+        const fresh = data.find((d: any) => d.id === o.id)
+        return fresh ? { ...o, estado: fresh.estado, numero: fresh.numero_pedido } : o
+      }).filter((o: any) => o.estado !== 'ENTREGADO' && o.estado !== 'CANCELADO')
+      localStorage.setItem('lovers_active_orders', JSON.stringify(updated))
+      setActiveOrders(updated)
+    } catch { setActiveOrders([]) }
+  }
 
   async function loadData() {
     const [{ data: prods }, { data: sA }, { data: sS }] = await Promise.all([
@@ -154,6 +181,30 @@ export default function HomePage() {
           <span style={{ color:'rgba(255,255,255,0.5)', fontSize:'24px', position:'relative', zIndex:2 }}>›</span>
           {heroSmash && <img src={heroSmash} alt="" style={{ position:'absolute', right:'-8px', bottom:'-8px', height:'115px', objectFit:'contain', pointerEvents:'none', zIndex:1, filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.3))' }} />}
         </div>
+
+        {/* PEDIDOS ACTIVOS */}
+        {activeOrders.length > 0 && (
+          <div style={{ marginBottom:'20px' }}>
+            <p style={{ fontSize:'11px', fontWeight:800, letterSpacing:'0.8px', color:'#9CA3AF', textTransform:'uppercase', marginBottom:'10px' }}>📦 Pedidos activos</p>
+            <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+              {activeOrders.map((order: any) => {
+                const bc = order.marca === 'SMASH' ? '#0052CC' : '#C41E3A'
+                const estadoLabel: Record<string,string> = { PENDIENTE:'⏳ Esperando aprobación', PAGADO:'✅ Confirmado', EN_COCINA:'🍳 En cocina', LISTO:'✓ Listo para envío', ENVIO_SOLICITADO:'📍 Buscando repartidor', EN_CAMINO:'🛵 En camino', ENTREGADO:'🎉 Entregado', CANCELADO:'❌ Cancelado' }
+                return (
+                  <button key={order.id} onClick={() => router.push('/orders/' + order.id)}
+                    style={{ width:'100%', padding:'14px 16px', borderRadius:'16px', border:'none', background:bc, cursor:'pointer', display:'flex', alignItems:'center', gap:'12px', boxShadow:'0 2px 12px ' + bc + '40' }}>
+                    <span style={{ fontSize:'22px' }}>{order.marca === 'SMASH' ? '🍔' : '🫓'}</span>
+                    <div style={{ flex:1, textAlign:'left' }}>
+                      <p style={{ fontFamily:'var(--font-display)', fontWeight:800, fontSize:'14px', color:'white', margin:'0 0 2px' }}>Pedido #{order.numero}</p>
+                      <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.8)', margin:0 }}>{estadoLabel[order.estado] || order.estado} · Toca para ver</p>
+                    </div>
+                    <span style={{ fontSize:'18px', color:'rgba(255,255,255,0.6)' }}>›</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* INSTALL CARD */}
         {installPrompt && !appInstalled && !installDismissed && (

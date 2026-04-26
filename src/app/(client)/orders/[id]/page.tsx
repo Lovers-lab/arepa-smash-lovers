@@ -99,7 +99,7 @@ export default function OrderTrackingPage() {
       {/* Header */}
       <header style={{ background: 'white', borderBottom: '1px solid #E4E6EA', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 20 }}>
         <div style={{ maxWidth: '520px', margin: '0 auto', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={() => router.back()}
+          <button onClick={() => router.push('/')}
             style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#F3F4F6', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', color: '#6B7280' }}>‹</button>
           <img src={brandLogo} style={{ width: '36px', height: '36px', borderRadius: '10px', objectFit: 'cover' }} alt="" />
           <div>
@@ -116,15 +116,6 @@ export default function OrderTrackingPage() {
 
       <main style={{ maxWidth: '520px', margin: '0 auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-        {/* Botón volver al menú mientras pedido activo */}
-        {!isDelivered && !isCancelled && (
-          <button onClick={() => router.push('/')}
-            style={{ display:'flex', alignItems:'center', gap:'8px', padding:'12px 16px', background:'white', border:'1px solid #E4E6EA', borderRadius:'14px', cursor:'pointer', fontSize:'13px', fontWeight:700, color:'#6B7280', width:'100%' }}>
-            <span style={{ fontSize:'16px' }}>🛒</span>
-            <span>Seguir comprando mientras esperas</span>
-            <span style={{ marginLeft:'auto', fontSize:'16px' }}>›</span>
-          </button>
-        )}
 
         {/* Status card */}
         {!isCancelled && !isPending ? (

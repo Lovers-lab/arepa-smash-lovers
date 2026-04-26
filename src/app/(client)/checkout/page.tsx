@@ -162,12 +162,11 @@ export default function CheckoutPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Error procesando el pedido'); setSubmitting(false); return }
       localStorage.removeItem('lovers_cart')
-      localStorage.setItem('lovers_active_order', JSON.stringify({
-        id: data.orderId,
-        numero: data.numeroPedido || String(data.orderId).substring(0,8),
-        estado: 'PENDIENTE',
-        marca: marca
-      }))
+      // Guardar en array de pedidos activos (soporta múltiples simultáneos)
+      const existingRaw = localStorage.getItem('lovers_active_orders')
+      const existing = existingRaw ? JSON.parse(existingRaw) : []
+      const newOrder = { id: data.orderId, numero: data.numeroPedido || String(data.orderId).substring(0,8), estado: 'PENDIENTE', marca: marca }
+      localStorage.setItem('lovers_active_orders', JSON.stringify([...existing, newOrder]))
       router.push('/')
     } catch { setError('Error de conexión. Intenta de nuevo.'); setSubmitting(false) }
   }
