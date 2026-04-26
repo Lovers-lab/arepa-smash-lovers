@@ -1,14 +1,20 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get('userId')
   if (!userId) return NextResponse.json({ orders: [] })
 
-  const supabase = createAdminClient()
-  const { data } = await supabase
+  // Usar cliente directo con service role para evitar replica lag
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+
+  const { data, error } = await supabase
     .from('orders')
     .select('id, numero_pedido, estado, marca, total_pagado, fecha_orden')
     .eq('user_id', userId)
