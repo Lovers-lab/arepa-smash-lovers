@@ -9,6 +9,7 @@ import { formatRD, calculateShipping } from '@/lib/utils/formatters'
 import { createClient } from '@/lib/supabase/client'
 import BankSelector from '@/components/forms/BankSelector'
 import MapPicker from '@/components/map/MapPicker'
+import { syncCartToCloud } from '@/lib/utils/cart'
 
 export const dynamic = 'force-dynamic'
 const supabase = createClient()
@@ -162,6 +163,8 @@ export default function CheckoutPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Error procesando el pedido'); setSubmitting(false); return }
       localStorage.removeItem('lovers_cart')
+      // Limpiar carrito en cloud
+      syncCartToCloud(user.id, marca, [])
       // Guardar en array de pedidos activos (soporta múltiples simultáneos)
       const existingRaw = localStorage.getItem('lovers_active_orders')
       const existing = existingRaw ? JSON.parse(existingRaw) : []

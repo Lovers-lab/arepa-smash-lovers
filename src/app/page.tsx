@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { loadActiveOrdersFromCloud } from '@/lib/utils/cart'
 
 type Marca = 'AREPA' | 'SMASH'
 interface TopProduct { id: string; nombre: string; precio: number; foto_url: string | null; descuento_pct: number; es_destacado: boolean; marca: Marca }
@@ -55,9 +56,10 @@ export default function HomePage() {
   useEffect(() => {
     const stored = localStorage.getItem('lovers_user')
     if (!stored) { router.replace('/auth/login'); return }
-    setUser(JSON.parse(stored))
+    const u = JSON.parse(stored)
+    setUser(u)
     loadData()
-    loadActiveOrders()
+    loadActiveOrders(u.id)
     // App install
     if (typeof window !== 'undefined') {
       if (window.matchMedia('(display-mode: standalone)').matches) {

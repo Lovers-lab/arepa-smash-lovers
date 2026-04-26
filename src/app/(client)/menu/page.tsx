@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Product, Category, CartItem, Marca } from '@/types'
 import type { SelectedModifier } from '@/types/modifiers'
 import ModifierModal from '@/components/menu/ModifierModal'
+import { syncCartToCloud, loadCartFromCloud } from '@/lib/utils/cart'
 
 type Cart = { items: CartItem[]; marca: Marca }
 
@@ -77,6 +78,18 @@ export default function MenuPage() {
     const storedUser = localStorage.getItem('lovers_user')
     const storedMarca = localStorage.getItem('lovers_marca') as Marca
     const storedCart = localStorage.getItem('lovers_cart')
+    // Sync desde cloud si hay usuario
+    if (storedUser) {
+      const u = JSON.parse(storedUser)
+      const cloudItems = await loadCartFromCloud(u.id, storedMarca || 'AREPA')
+      if (cloudItems && cloudItems.length > 0) {
+        const localCart = storedCart ? JSON.parse(storedCart) : null
+        // Si cloud tiene items y local no, o cloud es más reciente
+        if (!localCart || localCart.items?.length === 0) {
+          localStorage.setItem('lovers_cart', JSON.stringify({ marca: storedMarca || 'AREPA', items: cloudItems }))
+        }
+      }
+    }
     if (!storedUser) { router.replace('/auth/login'); return }
     const u = JSON.parse(storedUser)
     const m = storedMarca || 'AREPA'
