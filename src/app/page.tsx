@@ -99,7 +99,10 @@ export default function HomePage() {
 
   async function loadActiveOrders(userId?: string) {
     try {
-      // Si tenemos userId, cargar desde Supabase (cross-device)
+      if (!userId) {
+        const stored = localStorage.getItem('lovers_user')
+        if (stored) userId = JSON.parse(stored).id
+      }
       if (userId) {
         const cloudOrders = await loadActiveOrdersFromCloud(userId)
         setActiveOrders(cloudOrders)
