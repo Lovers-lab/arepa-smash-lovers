@@ -106,6 +106,8 @@ export default function HomePage() {
       if (userId) {
         const cloudOrders = await loadActiveOrdersFromCloud(userId)
         setActiveOrders(cloudOrders)
+        // Limpiar localStorage viejo
+        localStorage.removeItem('lovers_active_orders')
         return
       }
       const raw = localStorage.getItem('lovers_active_orders')
