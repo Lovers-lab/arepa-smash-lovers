@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     .eq('user_id', userId)
     .in('estado', ['PENDIENTE', 'PAGADO', 'EN_COCINA', 'LISTO', 'ENVIO_SOLICITADO', 'EN_CAMINO'])
     .order('fecha_orden', { ascending: false })
-    .limit(5)
+    .limit(10)
 
   return NextResponse.json({ orders: data || [] }, {
     headers: { 'Cache-Control': 'no-store, max-age=0' }
