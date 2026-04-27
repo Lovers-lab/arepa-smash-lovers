@@ -157,7 +157,7 @@ export default function CheckoutPage() {
       formData.append('items', JSON.stringify(items.map(i => ({ productId: i.product.id, cantidad: i.cantidad, notas: i.notas }))))
       if (deliveryLat) formData.append('lat', String(deliveryLat))
       if (deliveryLng) formData.append('lng', String(deliveryLng))
-      if (metodoPago === 'TARJETA') formData.append('cardData', JSON.stringify({ nombre: cardNombre, numero: cardNumero.replace(/\s/g,''), expiry: cardExpiry, cvv: cardCVV }))
+
       if (comprobante) formData.append('comprobante', comprobante)
       const res = await fetch('/api/orders/create', { method: 'POST', body: formData })
       const data = await res.json()
@@ -273,7 +273,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {metodoPago === 'TARJETA' && (
+            {metodoPago === 'TARJETA' && false && (
               <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E4E6EA', padding:'20px', display:'flex', flexDirection:'column', gap:'12px' }}>
                 {fld('Nombre en tarjeta','Juan Pérez',cardNombre,setCardNombre,cardErrors.nombre)}
                 {fld('Número de tarjeta','0000 0000 0000 0000',cardNumero,(v)=>setCardNumero(formatCardNumber(v)),cardErrors.numero)}
