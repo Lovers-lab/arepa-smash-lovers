@@ -170,6 +170,7 @@ export default function CheckoutPage() {
       const existing = existingRaw ? JSON.parse(existingRaw) : []
       const newOrder = { id: data.orderId, numero: data.numeroPedido || String(data.orderId).substring(0,8), estado: 'PENDIENTE', marca: marca }
       localStorage.setItem('lovers_active_orders', JSON.stringify([...existing, newOrder]))
+      if (metodoPago === 'TARJETA') { const mioRes = await fetch('/api/mio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: data.orderId }) }); const mioData = await mioRes.json(); if (mioData.checkoutUrl) { window.location.href = mioData.checkoutUrl; return; } else { setError('Error iniciando pago: ' + (mioData.error || 'Intenta de nuevo')); setSubmitting(false); return; } }
       router.push('/')
     } catch { setError('Error de conexión. Intenta de nuevo.'); setSubmitting(false) }
   }
