@@ -10,9 +10,6 @@ export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get('userId')
   if (!userId) return NextResponse.json({ orders: [], debug: 'no userId' })
 
-  console.log('SUPA_URL:', SUPA_URL ? 'SET' : 'MISSING')
-  console.log('SUPA_KEY:', SUPA_KEY ? 'SET' : 'MISSING')
-
   const supabase = createClient(SUPA_URL!, SUPA_KEY!, { auth: { persistSession: false } })
 
   const { data, error } = await supabase
@@ -23,7 +20,9 @@ export async function GET(request: NextRequest) {
     .order('fecha_orden', { ascending: false })
     .limit(10)
 
-  return NextResponse.json({ orders: data || [], error: error?.message, supaUrl: SUPA_URL ? 'set' : 'missing' }, {
+  const urlPrefix = SUPA_URL ? SUPA_URL.substring(0, 30) : 'missing'
+
+  return NextResponse.json({ orders: data || [], error: error?.message, urlPrefix }, {
     headers: { 'Cache-Control': 'no-store, max-age=0' }
   })
 }
