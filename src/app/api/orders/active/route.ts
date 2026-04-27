@@ -3,15 +3,14 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+const SUPA_URL = process.env['NEXT_PUBLIC_SUPABASE_URL']
+const SUPA_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY']
+
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get('userId')
   if (!userId) return NextResponse.json({ orders: [] })
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  )
+  const supabase = createClient(SUPA_URL!, SUPA_KEY!, { auth: { persistSession: false } })
 
   const { data } = await supabase
     .from('orders')
