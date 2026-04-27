@@ -142,7 +142,7 @@ export default function CheckoutPage() {
   const brandLogo = marca === 'AREPA' ? '/logos/logo-arepa.png' : '/logos/logo-smash.png'
 
   async function submitOrder() {
-    if (metodoPago === 'TARJETA' && !validateCard()) return
+
     setSubmitting(true); setError('')
     try {
       const formData = new FormData()
@@ -341,7 +341,7 @@ export default function CheckoutPage() {
               if (!metodoPago) { setError('Selecciona un método de pago'); return }
               if (metodoPago === 'TRANSFERENCIA' && !selectedBank) { setError('Selecciona un banco'); return }
               if (metodoPago === 'TRANSFERENCIA' && !comprobante) { setError('Sube el comprobante'); return }
-              if (metodoPago === 'TARJETA' && !validateCard()) return
+
               setError(''); setStep('confirmar')
             }} className="rpl"
               style={{ width:'100%', padding:'18px', borderRadius:'16px', border:'none', background:brandColor, color:'white', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'16px', cursor:'pointer', boxShadow:`0 4px 16px ${brandColor}40`, position:'relative' }}>
