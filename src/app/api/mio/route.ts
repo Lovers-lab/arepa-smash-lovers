@@ -27,12 +27,16 @@ async function getMioToken(): Promise<string> {
       scope: 'api_orders_post',
     }),
   })
+  const text = await res.text()
   if (!res.ok) {
-    const err = await res.json()
-    throw new Error(`MIO Auth error: ${JSON.stringify(err)}`)
+    throw new Error(`MIO Auth error ${res.status}: ${text}`)
   }
-  const data = await res.json()
-  return data.access_token
+  try {
+    const data = JSON.parse(text)
+    return data.access_token
+  } catch {
+    throw new Error(`MIO Auth respuesta inválida: ${text.substring(0,200)}`)
+  }
 }
 
 export async function POST(request: NextRequest) {
