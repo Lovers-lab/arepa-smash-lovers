@@ -181,15 +181,25 @@ export default function AdminDashboard() {
     await updateStatus(id, 'CANCELADO' as OrderStatus)
   }
 
-  function printComanda(order: Order) {
-    const user = order.user as any
-    const items = (order.items as any[] || [])
-    const logoUrl = window.location.origin + (order.marca === 'AREPA' ? '/logos/logo-arepa-bw.jpg' : '/logos/logo-smash-bw.png')
-    const brandName = order.marca === 'AREPA' ? 'AREPA LOVERS' : 'SMASH LOVERS'
-    const hora = new Date((order as any).fecha_orden).toLocaleTimeString('es-DO', {hour:'2-digit', minute:'2-digit'})
-    const fecha = new Date((order as any).fecha_orden).toLocaleDateString('es-DO', {day:'numeric', month:'short', year:'numeric'})
+  async function printComanda(order: Order) {
+    const { data: freshOrder } = await supabase
+      .from('orders')
+      .select('*, user:users(nombre,whatsapp), items:order_items(*, product:products(nombre,precio), modifiers:order_item_modifiers(option_nombre,group_nombre,precio_extra))')
+      .eq('id', (order as any).id)
+      .single()
+
+    const o = (freshOrder || order) as any
+    const user = o.user as any
+    const items = (o.items as any[] || [])
+    const logoUrl = window.location.origin + (o.marca === 'AREPA' ? '/logos/logo-arepa-bw.jpg' : '/logos/logo-smash-bw.png')
+    const brandName = o.marca === 'AREPA' ? 'AREPA LOVERS' : 'SMASH LOVERS'
+    const hora = new Date(o.fecha_orden).toLocaleTimeString('es-DO', {hour:'2-digit', minute:'2-digit'})
+    const fecha = new Date(o.fecha_orden).toLocaleDateString('es-DO', {day:'numeric', month:'short', year:'numeric'})
 
     let itemsHtml = ''
+    if (items.length === 0) {
+      itemsHtml = '<div style="padding:10px 0;color:#000;font-size:14px">No se encontraron productos</div>'
+    }
     for (const i of items) {
       const mods = i.modifiers || []
       let modHtml = ''
@@ -197,7 +207,7 @@ export default function AdminDashboard() {
         const nombre = m.option_nombre || ''
         const grupo = m.group_nombre ? m.group_nombre + ': ' : ''
         const precio = m.precio_extra > 0 ? ' +RD$' + m.precio_extra : ''
-        modHtml += '<div style="padding:1px 0 1px 0;font-size:13px;font-weight:500;margin-left:16px;color:#000">&#x2192; ' + grupo + nombre + precio + '</div>'
+        modHtml += '<div style="padding:1px 0;font-size:13px;font-weight:500;margin-left:16px;color:#000">&#x2192; ' + grupo + nombre + precio + '</div>'
       }
       const notasItem = i.notas ? '<div style="padding:2px 0 2px 16px;font-size:12px;font-style:italic;color:#000">Nota: ' + i.notas + '</div>' : ''
       const precioItem = ((i.product?.precio || i.precio_unitario || 0) * i.cantidad).toLocaleString('es-DO')
@@ -208,33 +218,28 @@ export default function AdminDashboard() {
       itemsHtml += '</div>' + modHtml + notasItem + '</div>'
     }
 
-    const direccion = (order as any).direccion_texto
-    const notasPedido = (order as any).notas_cliente
-    const numPedido = (order as any).numero_pedido
-    const totalPagado = formatRD((order as any).total_pagado)
-    const costoEnvio = (order as any).costo_envio
-    const metodoPago = order.metodo_pago || 'EFECTIVO'
+    const numPedido = o.numero_pedido
+    const totalPagado = formatRD(o.total_pagado)
+    const costoEnvio = o.costo_envio
+    const metodoPago = o.metodo_pago || 'EFECTIVO'
+    const direccion = o.direccion_texto
+    const notasPedido = o.notas_cliente
 
     let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comanda #' + numPedido + '</title>'
-    html += '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:white;color:#000;max-width:380px;margin:0 auto}-webkit-print-color-adjust:exact;print-color-adjust:exact;@media print{.no-print{display:none}}</style></head><body>'
-    // LOGO
+    html += '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:white;color:#000;max-width:380px;margin:0 auto}@media print{.no-print{display:none}}</style></head><body>'
     html += '<div style="padding:16px;text-align:center;border-bottom:3px solid #000">'
     html += '<img src="' + logoUrl + '" style="width:120px;height:120px;object-fit:contain;display:block;margin:0 auto 8px" />'
     html += '<div style="font-weight:900;font-size:18px;color:#000;letter-spacing:2px">' + brandName + '</div>'
     html += '<div style="font-size:12px;color:#000;margin-top:2px">' + fecha + '</div></div>'
-    // NUMERO PEDIDO
     html += '<div style="padding:16px;text-align:center;border-bottom:3px solid #000">'
     html += '<div style="font-size:11px;color:#000;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:4px">PEDIDO</div>'
     html += '<div style="font-weight:900;font-size:52px;color:#000;letter-spacing:-2px;line-height:1">#' + numPedido + '</div>'
     html += '<div style="font-size:14px;color:#000;margin-top:6px;font-weight:600">' + hora + '</div></div>'
-    // CLIENTE
     html += '<div style="padding:12px 16px;border-bottom:3px solid #000">'
     html += '<div style="font-size:10px;color:#000;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px">CLIENTE</div>'
     html += '<div style="font-weight:700;font-size:20px;color:#000">' + (user?.nombre || 'Cliente') + '</div>'
     html += '<div style="font-size:14px;color:#000;margin-top:2px">' + (user?.whatsapp || '') + '</div></div>'
-    // PRODUCTOS
     html += '<div style="padding:0 16px"><div style="font-size:10px;color:#000;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;padding:12px 0 4px;border-bottom:1px solid #000">PRODUCTOS</div>' + itemsHtml + '</div>'
-    // TOTALES
     html += '<div style="padding:14px 16px;border-top:3px solid #000;margin-top:4px">'
     html += '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:14px;color:#000">Envio</span><span style="font-size:14px;color:#000;font-weight:600">' + (costoEnvio > 0 ? 'RD$' + costoEnvio : 'GRATIS') + '</span></div>'
     html += '<div style="display:flex;justify-content:space-between;padding-top:10px;border-top:2px solid #000"><span style="font-weight:900;font-size:20px;color:#000">TOTAL</span><span style="font-weight:900;font-size:20px;color:#000">' + totalPagado + '</span></div>'
@@ -252,6 +257,7 @@ export default function AdminDashboard() {
     w.focus()
     setTimeout(() => { w.print() }, 500)
   }
+
 
 
 
