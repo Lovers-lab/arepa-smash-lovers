@@ -66,7 +66,11 @@ export async function POST(request: NextRequest) {
     }
 
     const montoFinal = Math.max(0, montoOriginal - descuento)
-    const costoEnvio = montoFinal >= 1000 ? 0 : 99
+    // Leer costo de envío desde la zona de entrega
+    const { data: zona } = await supabase.from('delivery_zones').select('precio_envio, envio_gratis_umbral').eq('activo', true).single()
+    const precioEnvio = zona?.precio_envio ?? 99
+    const umbralGratis = zona?.envio_gratis_umbral ?? 1000
+    const costoEnvio = (umbralGratis === 0 || montoFinal >= umbralGratis) ? 0 : precioEnvio
     const totalPagado = montoFinal + costoEnvio
 
     // 3. Get next order number
