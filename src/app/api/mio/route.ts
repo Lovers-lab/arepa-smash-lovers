@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
           'Content-Type': 'application/json',
           'Prefer': 'return=minimal',
         },
-        body: JSON.stringify({ estado: 'PAGADO', metodo_pago: 'TARJETA_MIO' }),
+        body: JSON.stringify({ estado: 'PENDIENTE', metodo_pago: 'TARJETA_MIO' }),
       })
     }
 

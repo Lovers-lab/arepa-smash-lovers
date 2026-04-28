@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get('userId')
   if (!userId) return NextResponse.json({ orders: [] })
 
-  const estados = ['PENDIENTE', 'PAGADO', 'EN_COCINA', 'LISTO', 'ENVIO_SOLICITADO', 'EN_CAMINO']
+  const estados = ['BORRADOR', 'PENDIENTE', 'PAGADO', 'EN_COCINA', 'LISTO', 'ENVIO_SOLICITADO', 'EN_CAMINO']
   const estadosFilter = estados.map(e => `estado.eq.${e}`).join(',')
 
   const url = `${SUPA_URL}/rest/v1/orders?select=id,numero_pedido,estado,marca,total_pagado,fecha_orden&user_id=eq.${userId}&or=(${estadosFilter})&order=fecha_orden.desc&limit=10`
