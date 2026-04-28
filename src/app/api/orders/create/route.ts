@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Create order
-    const estadoInicial = metodoPago === 'TARJETA' ? 'PAGADO' : 'PENDIENTE'
+    const estadoInicial = metodoPago === 'TARJETA' ? 'BORRADOR' : 'PENDIENTE'
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
