@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     })
 
     const mioText = await res.text()
-    if (!res.ok) return NextResponse.json({ error: 'Error MIO', details: mioText }, { status: 500 })
+    if (!res.ok) return NextResponse.json({ error: 'Error MIO status ' + res.status, details: mioText }, { status: 500 })
     const mioData = JSON.parse(mioText)
     const checkoutUrl = mioData?.data?.links?.checkout
     const mioOrderId = mioData?.data?.id
