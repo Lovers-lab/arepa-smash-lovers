@@ -136,7 +136,9 @@ export default function CheckoutPage() {
   const subtotal = items.reduce((a, i) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0)
   const promoDiscount = promoResult?.valid ? Math.round(subtotal * (promoResult.discount_pct || 0) / 100) : 0
   const totalPostDesc = Math.max(0, subtotal - loyaltyAplicado - promoDiscount)
-  const envio = calculateShipping(totalPostDesc, deliveryZone?.envio_gratis_umbral || 500, deliveryZone?.precio_envio ?? 99)
+  const envio = deliveryZone 
+    ? (deliveryZone.envio_gratis_umbral === 0 ? 0 : calculateShipping(totalPostDesc, deliveryZone.envio_gratis_umbral, deliveryZone.precio_envio))
+    : calculateShipping(totalPostDesc)
   const total = totalPostDesc + envio
   const stepNum = step === 'direccion' ? 1 : step === 'pago' ? 2 : 3
   const brandLogo = marca === 'AREPA' ? '/logos/logo-arepa.png' : '/logos/logo-smash.png'
