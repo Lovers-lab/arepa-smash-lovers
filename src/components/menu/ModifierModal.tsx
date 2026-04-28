@@ -7,11 +7,12 @@ import type { ModifierGroup, ModifierOption, SelectedModifier } from '@/types/mo
 interface ModifierModalProps {
   product: { id: string; nombre: string; precio: number; foto_url?: string }
   brandColor: string
-  onConfirm: (modifiers: SelectedModifier[], totalExtras: number) => void
+  onConfirm: (modifiers: SelectedModifier[], totalExtras: number, notas?: string) => void
   onClose: () => void
 }
 
 export default function ModifierModal({ product, brandColor, onConfirm, onClose }: ModifierModalProps) {
+  const [notas, setNotas] = useState('')
   const supabase = createClient()
   const [groups, setGroups] = useState<ModifierGroup[]>([])
   const [selected, setSelected] = useState<Record<string, string[]>>({}) // groupId -> optionIds[]
@@ -92,7 +93,7 @@ export default function ModifierModal({ product, brandColor, onConfirm, onClose 
       })
     })
 
-    onConfirm(modifiers, totalExtras)
+    onConfirm(modifiers, totalExtras, notas.trim())
   }
 
   const totalPrice = product.precio + Object.values(selected).flat().reduce((acc, optId) => {
@@ -210,6 +211,24 @@ export default function ModifierModal({ product, brandColor, onConfirm, onClose 
           )}
 
           {error && <p style={{ color: '#EF4444', fontSize: '13px', textAlign: 'center', marginTop: '8px' }}>{error}</p>}
+        </div>
+
+        {/* Notas opcionales */}
+        <div style={{ padding: '0 20px 16px' }}>
+          <textarea
+            placeholder="Comentario opcional para este producto..."
+            value={notas}
+            onChange={e => setNotas(e.target.value)}
+            maxLength={150}
+            rows={2}
+            style={{
+              width: '100%', boxSizing: 'border-box' as any,
+              border: '1.5px dashed #D1D5DB', borderRadius: '12px',
+              padding: '10px 12px', fontSize: '13px', fontFamily: 'var(--font-body)',
+              color: '#374151', resize: 'none', outline: 'none',
+              background: '#FAFAFA', lineHeight: 1.4,
+            }}
+          />
         </div>
 
         {/* Footer */}

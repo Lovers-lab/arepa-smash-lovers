@@ -202,13 +202,13 @@ export default function MenuPage() {
     setTimeout(() => { isScrollingRef.current = false }, 900)
   }
 
-  function addToCart(product: Product, modifiers: SelectedModifier[] = [], totalExtras: number = 0) {
+  function addToCart(product: Product, modifiers: SelectedModifier[] = [], totalExtras: number = 0, notas: string = '') {
     setCart(prev => {
       const hasModifiers = modifiers.length > 0
       const existing = !hasModifiers ? prev.items.find(i => i.product.id === product.id && !i.modifiers?.length) : null
       const items = existing
         ? prev.items.map(i => i.product.id === product.id && !i.modifiers?.length ? { ...i, cantidad: i.cantidad + 1 } : i)
-        : [...prev.items, { product, cantidad: 1, modifiers, totalExtras }]
+        : [...prev.items, { product, cantidad: 1, modifiers, totalExtras, notas }]
       const updated: Cart = { marca, items }
       localStorage.setItem('lovers_cart', JSON.stringify(updated))
       return updated
@@ -395,7 +395,7 @@ export default function MenuPage() {
       {/* MODIFIER MODAL */}
       {modifierProduct && (
         <ModifierModal product={modifierProduct} brandColor={brandColors.primary}
-          onConfirm={(modifiers, totalExtras) => { addToCart(modifierProduct, modifiers, totalExtras); setModifierProduct(null) }}
+          onConfirm={(modifiers, totalExtras, notas) => { addToCart(modifierProduct, modifiers, totalExtras, notas || ''); setModifierProduct(null) }}
           onClose={() => setModifierProduct(null)} />
       )}
 
