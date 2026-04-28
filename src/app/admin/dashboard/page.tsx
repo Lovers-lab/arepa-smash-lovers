@@ -184,9 +184,8 @@ export default function AdminDashboard() {
   function printComanda(order: Order) {
     const user = order.user as any
     const items = (order.items as any[] || [])
-    const logoUrl = window.location.origin + (order.marca === 'AREPA' ? '/logos/logo-arepa.png' : '/logos/logo-smash.png')
+    const logoUrl = window.location.origin + (order.marca === 'AREPA' ? '/logos/logo-arepa-bw.jpg' : '/logos/logo-smash-bw.png')
     const brandName = order.marca === 'AREPA' ? 'AREPA LOVERS' : 'SMASH LOVERS'
-    const brandColor = order.marca === 'AREPA' ? '#C41E3A' : '#0052CC'
     const hora = new Date((order as any).fecha_orden).toLocaleTimeString('es-DO', {hour:'2-digit', minute:'2-digit'})
     const fecha = new Date((order as any).fecha_orden).toLocaleDateString('es-DO', {day:'numeric', month:'short', year:'numeric'})
 
@@ -195,14 +194,14 @@ export default function AdminDashboard() {
       const mods = i.modifiers || []
       let modHtml = ''
       for (const m of mods) {
-        const nombre = m.option_nombre || m.nombre || ''
+        const nombre = m.option_nombre || ''
         const grupo = m.group_nombre ? m.group_nombre + ': ' : ''
         const precio = m.precio_extra > 0 ? ' +RD$' + m.precio_extra : ''
-        modHtml += '<div style="padding:2px 0 2px 0;color:#000;font-size:13px;font-weight:500;margin-left:16px">&#x2192; ' + grupo + nombre + precio + '</div>'
+        modHtml += '<div style="padding:1px 0 1px 0;font-size:13px;font-weight:500;margin-left:16px;color:#000">&#x2192; ' + grupo + nombre + precio + '</div>'
       }
-      const notasItem = i.notas ? '<div style="padding:2px 0 2px 16px;color:#000;font-size:12px;font-style:italic">Nota: ' + i.notas + '</div>' : ''
-      const precioItem = ((i.product?.precio || 0) * i.cantidad).toLocaleString('es-DO')
-      itemsHtml += '<div style="padding:10px 0;border-bottom:1.5px dashed #ccc">'
+      const notasItem = i.notas ? '<div style="padding:2px 0 2px 16px;font-size:12px;font-style:italic;color:#000">Nota: ' + i.notas + '</div>' : ''
+      const precioItem = ((i.product?.precio || i.precio_unitario || 0) * i.cantidad).toLocaleString('es-DO')
+      itemsHtml += '<div style="padding:10px 0;border-bottom:1.5px dashed #000">'
       itemsHtml += '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
       itemsHtml += '<div style="font-size:15px;font-weight:700;color:#000">' + i.cantidad + 'x ' + (i.product?.nombre || 'Producto') + '</div>'
       itemsHtml += '<div style="font-size:14px;font-weight:600;color:#000">RD$' + precioItem + '</div>'
@@ -217,37 +216,43 @@ export default function AdminDashboard() {
     const metodoPago = order.metodo_pago || 'EFECTIVO'
 
     let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comanda #' + numPedido + '</title>'
-    html += '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:white;color:#000;max-width:380px;margin:0 auto}@media print{.no-print{display:none}}</style></head><body>'
-    html += '<div style="background:' + brandColor + ';padding:20px 16px;text-align:center">'
-    html += '<img src="' + logoUrl + '" style="width:80px;height:80px;border-radius:16px;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:block;margin:0 auto 10px" />'
-    html += '<div style="font-weight:900;font-size:22px;color:white;letter-spacing:1px">' + brandName + '</div>'
-    html += '<div style="color:rgba(255,255,255,0.85);font-size:13px;margin-top:2px">' + fecha + '</div></div>'
-    html += '<div style="background:#000;padding:14px 16px;text-align:center">'
-    html += '<div style="color:rgba(255,255,255,0.7);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">PEDIDO</div>'
-    html += '<div style="font-weight:900;font-size:44px;color:white;letter-spacing:-1px">#' + numPedido + '</div>'
-    html += '<div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:4px">' + hora + '</div></div>'
-    html += '<div style="padding:14px 16px;border-bottom:2px solid #000">'
+    html += '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:white;color:#000;max-width:380px;margin:0 auto}-webkit-print-color-adjust:exact;print-color-adjust:exact;@media print{.no-print{display:none}}</style></head><body>'
+    // LOGO
+    html += '<div style="padding:16px;text-align:center;border-bottom:3px solid #000">'
+    html += '<img src="' + logoUrl + '" style="width:120px;height:120px;object-fit:contain;display:block;margin:0 auto 8px" />'
+    html += '<div style="font-weight:900;font-size:18px;color:#000;letter-spacing:2px">' + brandName + '</div>'
+    html += '<div style="font-size:12px;color:#000;margin-top:2px">' + fecha + '</div></div>'
+    // NUMERO PEDIDO
+    html += '<div style="padding:16px;text-align:center;border-bottom:3px solid #000">'
+    html += '<div style="font-size:11px;color:#000;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:4px">PEDIDO</div>'
+    html += '<div style="font-weight:900;font-size:52px;color:#000;letter-spacing:-2px;line-height:1">#' + numPedido + '</div>'
+    html += '<div style="font-size:14px;color:#000;margin-top:6px;font-weight:600">' + hora + '</div></div>'
+    // CLIENTE
+    html += '<div style="padding:12px 16px;border-bottom:3px solid #000">'
     html += '<div style="font-size:10px;color:#000;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px">CLIENTE</div>'
     html += '<div style="font-weight:700;font-size:20px;color:#000">' + (user?.nombre || 'Cliente') + '</div>'
     html += '<div style="font-size:14px;color:#000;margin-top:2px">' + (user?.whatsapp || '') + '</div></div>'
-    html += '<div style="padding:4px 16px 0"><div style="font-size:10px;color:#000;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;padding:12px 0 4px">PRODUCTOS</div>' + itemsHtml + '</div>'
-    html += '<div style="padding:14px 16px;border-top:2px solid #000;margin-top:4px">'
-    html += '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:#000">Envio</span><span style="font-size:13px;color:#000;font-weight:600">' + (costoEnvio > 0 ? 'RD$' + costoEnvio : 'GRATIS') + '</span></div>'
-    html += '<div style="display:flex;justify-content:space-between;padding-top:10px;border-top:2px solid #000"><span style="font-weight:900;font-size:18px;color:#000">TOTAL</span><span style="font-weight:900;font-size:18px;color:#000">' + totalPagado + '</span></div>'
-    html += '<div style="margin-top:10px"><span style="background:#000;color:white;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700">' + metodoPago + '</span></div></div>'
-    if (direccion) html += '<div style="padding:12px 16px;border-top:2px solid #000"><div style="font-size:10px;color:#000;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px">DIRECCION</div><div style="font-size:13px;color:#000">' + direccion + '</div></div>'
+    // PRODUCTOS
+    html += '<div style="padding:0 16px"><div style="font-size:10px;color:#000;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;padding:12px 0 4px;border-bottom:1px solid #000">PRODUCTOS</div>' + itemsHtml + '</div>'
+    // TOTALES
+    html += '<div style="padding:14px 16px;border-top:3px solid #000;margin-top:4px">'
+    html += '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:14px;color:#000">Envio</span><span style="font-size:14px;color:#000;font-weight:600">' + (costoEnvio > 0 ? 'RD$' + costoEnvio : 'GRATIS') + '</span></div>'
+    html += '<div style="display:flex;justify-content:space-between;padding-top:10px;border-top:2px solid #000"><span style="font-weight:900;font-size:20px;color:#000">TOTAL</span><span style="font-weight:900;font-size:20px;color:#000">' + totalPagado + '</span></div>'
+    html += '<div style="margin-top:10px;padding:6px 14px;border:2px solid #000;border-radius:999px;display:inline-block;font-size:12px;font-weight:700;color:#000">' + metodoPago + '</div></div>'
+    if (direccion) html += '<div style="padding:12px 16px;border-top:2px dashed #000"><div style="font-size:10px;color:#000;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px">DIRECCION</div><div style="font-size:13px;color:#000">' + direccion + '</div></div>'
     if (notasPedido) html += '<div style="padding:12px 16px;border-top:2px dashed #000"><div style="font-size:10px;color:#000;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px">NOTAS</div><div style="font-size:13px;color:#000">' + notasPedido + '</div></div>'
-    html += '<div style="padding:16px;text-align:center;border-top:2px dashed #000;margin-top:4px"><div style="font-size:12px;color:#000;font-weight:600">Gracias por tu pedido!</div></div>'
+    html += '<div style="padding:16px;text-align:center;border-top:3px dashed #000;margin-top:4px"><div style="font-size:13px;color:#000;font-weight:700">Gracias por tu pedido!</div></div>'
     html += '<div class="no-print" style="padding:16px;text-align:center"><button onclick="window.print()" style="background:#000;color:white;border:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Imprimir</button></div>'
     html += '</body></html>'
 
-    const w = window.open('', '_blank', 'width=400,height=700')
+    const w = window.open('', '_blank', 'width=420,height=750')
     if (!w) return
     w.document.write(html)
     w.document.close()
     w.focus()
     setTimeout(() => { w.print() }, 500)
   }
+
 
 
 
