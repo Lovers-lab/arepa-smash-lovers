@@ -249,62 +249,6 @@ export default function AdminDashboard() {
   }
 
 
-    const w = window.open('', '_blank', 'width=380,height=700')
-    if (!w) return
-    w.document.write(`<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Comanda #${(order as any).numero_pedido}</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: 'Courier New', monospace; background:white; color:#111; }
-  @media print {
-    body { width: 80mm; }
-    .no-print { display:none; }
-  }
-</style>
-</head>
-<body style="padding:0;background:white;max-width:380px;margin:0 auto">
-
-  <!-- HEADER CON LOGO -->
-  <div style="background:${brandColor};padding:20px 16px;text-align:center">
-    <img src="${logoUrl}" style="width:80px;height:80px;border-radius:16px;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,0.3);margin-bottom:10px;display:block;margin-left:auto;margin-right:auto" />
-    <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:white;letter-spacing:1px">${brandName}</div>
-    <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:2px;font-family:Arial,sans-serif">${fecha}</div>
-  </div>
-
-  <!-- NUMERO DE PEDIDO -->
-  <div style="background:#111;padding:14px 16px;text-align:center">
-    <div style="font-family:Arial,sans-serif;color:rgba(255,255,255,0.6);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">PEDIDO</div>
-    <div style="font-family:Arial,sans-serif;font-weight:900;font-size:36px;color:white;letter-spacing:-1px">#${(order as any).numero_pedido}</div>
-    <div style="color:rgba(255,255,255,0.6);font-size:13px;font-family:Arial,sans-serif;margin-top:4px">🕐 ${hora}</div>
-  </div>
-
-  <!-- CLIENTE -->
-  <div style="padding:14px 16px;background:#F9F9F9;border-bottom:2px solid #eee">
-    <div style="font-family:Arial,sans-serif;font-size:10px;color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">CLIENTE</div>
-    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:18px;color:#111">${user?.nombre || 'Cliente'}</div>
-    <div style="font-family:Arial,sans-serif;font-size:13px;color:#666;margin-top:2px">📞 ${user?.whatsapp || ''}</div>
-  </div>
-
-  <!-- ITEMS -->
-  <div style="padding:4px 16px 0">
-    <div style="font-family:Arial,sans-serif;font-size:10px;color:#999;letter-spacing:1.5px;text-transform:uppercase;padding:12px 0 4px">PRODUCTOS</div>
-    ${itemsHtml}
-  </div>
-
-  <!-- TOTALES -->
-  <div style="padding:14px 16px;background:#F9F9F9;border-top:2px solid #eee;margin-top:4px">
-    <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-family:Arial,sans-serif">
-      <span style="color:#666;font-size:13px">Subtotal</span>
-      <span style="font-size:13px">${formatRD((order as any).total_pagado)}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-family:Arial,sans-serif">
-      <span style="color:#666;font-size:13px">Envío</span>
-      <span style="font-size:13px">${(order as any).costo_envio > 0 ? 'RD
-
-  const active = orders.filter(o => !['ENTREGADO','CANCELADO'].includes((o as any).estado))
   const pendientes = active.filter(o => ['PENDIENTE','PAGADO'].includes((o as any).estado))
   const cocina = active.filter(o => (o as any).estado === 'EN_COCINA')
   const listos = active.filter(o => (o as any).estado === 'LISTO')
