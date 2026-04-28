@@ -29,13 +29,6 @@ export default function CartPage() {
   const [brandColor, setBrandColor] = useState('#C41E3A')
   const [hasGift, setHasGift] = useState(false)
   const [giftNombre, setGiftNombre] = useState('')
-  const [deliveryZone, setDeliveryZone] = useState<any>(null)
-  const [zoneLoaded, setZoneLoaded] = useState(false)
-
-  useEffect(() => {
-    supabase.from('delivery_zones').select('precio_envio, envio_gratis_umbral').eq('activo', true).single()
-      .then(({ data }) => { if (data) setDeliveryZone(data); setZoneLoaded(true) })
-  }, [])
 
   useEffect(() => {
     const storedMarca = localStorage.getItem('lovers_marca') as Marca || 'AREPA'
@@ -77,9 +70,7 @@ export default function CartPage() {
   const subtotal = items.reduce((a, i) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0)
   const loyaltyDesc = usarLoyalty ? Math.min(loyaltySaldo, subtotal) : 0
   const totalPagar = subtotal - loyaltyDesc
-  const precioEnvio = deliveryZone?.precio_envio ?? 99
-  const umbralGratis = deliveryZone?.envio_gratis_umbral ?? 1000
-  const envio = (umbralGratis === 0 || totalPagar >= umbralGratis) ? 0 : precioEnvio
+  const envio = totalPagar >= 500 ? 0 : 99
   const total = totalPagar + envio
 
   function toggleLoyalty(val: boolean) {
@@ -195,7 +186,7 @@ export default function CartPage() {
               {envio === 0 ? 'GRATIS 🎉' : formatRD(envio)}
             </span>
           </div>
-          {envio > 0 && umbralGratis > 0 && (
+          {envio > 0 && (
             <div style={{ background:'#F7F8FA', borderRadius:'10px', padding:'8px 12px', fontSize:'12px', color:'#9CA3AF', marginBottom:'8px' }}>
               Agrega {formatRD(500 - totalPagar)} más para envío gratis
             </div>
