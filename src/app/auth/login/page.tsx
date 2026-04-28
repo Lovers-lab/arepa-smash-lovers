@@ -317,19 +317,22 @@ export default function LoginPage() {
 
         {/* TRUST BADGES */}
         {step === 'phone' && (
-          <div style={{ display:'flex', gap:'20px', justifyContent:'center' }}>
-            {[
-              { icon:'🛵', label:'Rápido', sub:'y caliente' },
-              { icon:'✅', label:'Calidad', sub:'garantizada' },
-              { icon:'🔒', label:'Pago seguro', sub:'y protegido' },
-            ].map((b, i) => (
-              <div key={i} style={{ textAlign:'center' }}>
-                <div style={{ fontSize:'20px', marginBottom:'2px' }}>{b.icon}</div>
-                <p style={{ fontSize:'11px', fontWeight:700, color:'white', margin:0, lineHeight:1.2 }}>{b.label}</p>
-                <p style={{ fontSize:'10px', color:'rgba(255,255,255,0.45)', margin:0 }}>{b.sub}</p>
-              </div>
-            ))}
-          </div>
+          <>
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
+            <div style={{ display:'flex', gap:'0', background:'rgba(0,0,0,0.2)', borderRadius:'16px', overflow:'hidden', border:'1px solid rgba(255,255,255,0.08)', width:'100%' }}>
+              {[
+                { icon:'delivery_dining', label:'Rápido', sub:'y caliente' },
+                { icon:'verified', label:'Calidad', sub:'garantizada' },
+                { icon:'lock', label:'Pago seguro', sub:'y protegido' },
+              ].map((b, i) => (
+                <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', padding:'14px 8px', borderRight: i < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none', gap:'4px' }}>
+                  <span className="material-symbols-rounded" style={{ fontSize:'22px', color:'#F59E0B', fontVariationSettings:"'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>{b.icon}</span>
+                  <p style={{ fontSize:'11px', fontWeight:700, color:'white', margin:0, lineHeight:1.2 }}>{b.label}</p>
+                  <p style={{ fontSize:'10px', color:'rgba(255,255,255,0.4)', margin:0 }}>{b.sub}</p>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
       </div>
