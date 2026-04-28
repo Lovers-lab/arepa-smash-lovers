@@ -58,6 +58,8 @@ export default function AdminDashboard() {
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission()
     const ch = supabase.channel(`dash-${Date.now()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, ({ new: o }) => {
+        // Ignorar pedidos BORRADOR - solo mostrar cuando estén confirmados
+        if ((o as any).estado === 'BORRADOR') return
         setOrders(p => [o as Order, ...p])
         setNewIds(p => new Set([...p, (o as any).id]))
         loadStats()
