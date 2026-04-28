@@ -29,6 +29,8 @@ export default function CartPage() {
   const [brandColor, setBrandColor] = useState('#C41E3A')
   const [hasGift, setHasGift] = useState(false)
   const [giftNombre, setGiftNombre] = useState('')
+  const [deliveryZone, setDeliveryZone] = useState<any>(null)
+  const [zoneLoaded, setZoneLoaded] = useState(false)
 
   useEffect(() => {
     supabase.from('delivery_zones').select('precio_envio, envio_gratis_umbral').eq('activo', true).single()
