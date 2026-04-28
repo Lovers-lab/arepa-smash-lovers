@@ -23,6 +23,7 @@ function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
 export default function OrderTrackingPage() {
   const { id } = useParams<{ id: string }>()
   const searchParams = useSearchParams()
+  const pagoStatus = searchParams.get('pago')
   const router = useRouter()
   const isSuccess = searchParams.get('success') === '1'
 
