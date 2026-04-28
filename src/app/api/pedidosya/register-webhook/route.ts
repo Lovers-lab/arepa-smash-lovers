@@ -14,9 +14,11 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        url: APP_URL + '/api/pedidosya/webhook',
-        topic: 'SHIPPING_STATUS',
-        isTest: false,
+        webhooksConfiguration: [{
+          url: APP_URL + '/api/pedidosya/webhook',
+          topic: 'SHIPPING_STATUS',
+          isTest: false,
+        }]
       }),
     })
     const data = await res.json()
