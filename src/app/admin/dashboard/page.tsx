@@ -249,6 +249,7 @@ export default function AdminDashboard() {
   }
 
 
+  const active = orders.filter(o => !['ENTREGADO','CANCELADO'].includes((o as any).estado))
   const pendientes = active.filter(o => ['PENDIENTE','PAGADO'].includes((o as any).estado))
   const cocina = active.filter(o => (o as any).estado === 'EN_COCINA')
   const listos = active.filter(o => (o as any).estado === 'LISTO')
