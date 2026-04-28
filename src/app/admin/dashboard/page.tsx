@@ -85,7 +85,7 @@ export default function AdminDashboard() {
   async function loadOrders() {
     const { data } = await supabase.from('orders')
       .select('*, user:users(nombre,whatsapp), items:order_items(*, product:products(nombre,precio))')
-      .not('estado', 'in', '(ENTREGADO,CANCELADO)')
+      .in('estado', ['PENDIENTE','PAGADO','EN_COCINA','LISTO','ENVIO_SOLICITADO','EN_CAMINO','CANCELADO_EN_RUTA'])
       .order('fecha_orden', { ascending: false }).limit(60)
     if (data) setOrders(data as Order[])
   }
