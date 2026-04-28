@@ -52,6 +52,7 @@ export default function HomePage() {
   const [appInstalled, setAppInstalled] = useState(false)
   const [installDismissed, setInstallDismissed] = useState(false)
   const [activeOrders, setActiveOrders] = useState<any[]>([])
+  const [loyaltySaldo, setLoyaltySaldo] = useState(0)
 
   useEffect(() => {
     const stored = localStorage.getItem('lovers_user')
@@ -59,6 +60,7 @@ export default function HomePage() {
     const u = JSON.parse(stored)
     setUser(u)
     loadData()
+    loadLoyalty(u.id)
     loadActiveOrders(u.id)
     // Polling cada 10s con userId
     // App install
@@ -128,6 +130,14 @@ export default function HomePage() {
     } catch { setActiveOrders([]) }
   }
 
+  async function loadLoyalty(userId: string) {
+    try {
+      const res = await fetch(`/api/loyalty/balance?userId=${userId}`)
+      const data = await res.json()
+      setLoyaltySaldo(data.saldo || 0)
+    } catch {}
+  }
+
   async function loadData() {
     const [{ data: prods }, { data: sA }, { data: sS }] = await Promise.all([
       supabase.from('products').select('id, nombre, precio, foto_url, descuento_pct, es_destacado, marca').eq('activo', true).or('es_destacado.eq.true,descuento_pct.gt.0').order('es_destacado', { ascending: false }).order('descuento_pct', { ascending: false }).limit(12),
@@ -168,35 +178,42 @@ export default function HomePage() {
 
   return (
     <main style={{ minHeight:'100dvh', background:'#F4F4F6', fontFamily:'var(--font-body)', paddingBottom:'32px' }}>
-      <div style={{ background:'white', padding:'20px 20px 16px', borderBottom:'1px solid #EBEBEB' }}>
-        <p style={{ fontSize:'13px', color:'#9CA3AF', fontWeight:500, margin:0 }}>¡Hola, {user.nombre}! 👋</p>
-        <p style={{ fontSize:'15px', color:'#6B7280', margin:'2px 0 0', fontWeight:500 }}>¿Qué te provoca hoy?</p>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" />
+      <div style={{ background:'white', padding:'16px 20px 14px', borderBottom:'1px solid #F0F0F0', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div>
+          <p style={{ fontFamily:"'Poppins', var(--font-display)", fontSize:'20px', fontWeight:700, color:'#0D0F12', margin:0, lineHeight:1.2 }}>¡Hola, {user.nombre}! 👋</p>
+          <p style={{ fontFamily:"'Plus Jakarta Sans', var(--font-body)", fontSize:'13px', color:'#9CA3AF', margin:'3px 0 0', fontWeight:400 }}>¿Qué te provoca hoy?</p>
+        </div>
+        <div onClick={() => router.push('/wallet')} style={{ display:'flex', alignItems:'center', gap:'6px', background:'linear-gradient(135deg, #FEF3C7, #FDE68A)', borderRadius:'999px', padding:'7px 14px', cursor:'pointer', boxShadow:'0 2px 8px rgba(245,158,11,0.2)' }}>
+          <span style={{ fontSize:'16px' }}>🪙</span>
+          <span style={{ fontFamily:"'Poppins', var(--font-display)", fontWeight:700, fontSize:'13px', color:'#92400E' }}>{loyaltySaldo} pts</span>
+        </div>
       </div>
       <div style={{ padding:'20px 16px 0' }}>
         <p style={{ fontSize:'11px', fontWeight:800, letterSpacing:'0.8px', color:'#9CA3AF', textTransform:'uppercase', marginBottom:'12px' }}>Elige tu restaurante</p>
 
         {/* AREPA CARD */}
-        <div onClick={() => selectMarca('AREPA')} style={{ borderRadius:'20px', cursor:'pointer', marginBottom:'12px', background:'linear-gradient(135deg,#C41E3A,#E63946)', boxShadow:'0 4px 20px rgba(196,30,58,0.3)', padding:'20px', display:'flex', alignItems:'center', gap:'14px', position:'relative', overflow:'hidden' }}>
-          <img src="/logos/logo-arepa.png" style={{ width:'60px', height:'60px', borderRadius:'16px', objectFit:'cover', flexShrink:0, boxShadow:'0 4px 12px rgba(0,0,0,0.2)', position:'relative', zIndex:2 }} alt="Arepa Lovers" />
+        <div onClick={() => selectMarca('AREPA')} style={{ borderRadius:'18px', cursor:'pointer', marginBottom:'10px', background:'linear-gradient(135deg,#C41E3A,#E63946)', boxShadow:'0 4px 16px rgba(196,30,58,0.25)', padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px', position:'relative', overflow:'hidden', minHeight:'80px' }}>
+          <img src="/logos/logo-arepa.png" style={{ width:'52px', height:'52px', borderRadius:'14px', objectFit:'cover', flexShrink:0, boxShadow:'0 3px 10px rgba(0,0,0,0.2)', position:'relative', zIndex:2 }} alt="Arepa Lovers" />
           <div style={{ flex:1, position:'relative', zIndex:2 }}>
-            <div style={{ fontFamily:'var(--font-display)', fontSize:'22px', fontWeight:800, color:'white' }}>Arepa Lovers</div>
-            <div style={{ color:'rgba(255,255,255,0.7)', fontSize:'13px', marginTop:'2px' }}>Comida venezolana auténtica</div>
+            <div style={{ fontFamily:"'Poppins', var(--font-display)", fontSize:'19px', fontWeight:700, color:'white' }}>Arepa Lovers</div>
+            <div style={{ fontFamily:"'Plus Jakarta Sans', var(--font-body)", color:'rgba(255,255,255,0.75)', fontSize:'12px', marginTop:'2px' }}>Comida venezolana auténtica</div>
             <div style={{ background:'rgba(255,255,255,0.18)', color:'white', fontSize:'11px', fontWeight:700, padding:'3px 10px', borderRadius:'999px', marginTop:'6px', display:'inline-block' }}>⭐ 4.8 · 1,199 pedidos</div>
           </div>
           <span style={{ color:'rgba(255,255,255,0.5)', fontSize:'24px', position:'relative', zIndex:2 }}>›</span>
-          {heroArepa && <img src={heroArepa} alt="" style={{ position:'absolute', right:'-8px', bottom:'-8px', height:'115px', objectFit:'contain', pointerEvents:'none', zIndex:1, filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.3))' }} />}
+          {heroArepa && <img src={heroArepa} alt="" style={{ position:'absolute', right:'-4px', bottom:'-4px', height:'90px', objectFit:'contain', pointerEvents:'none', zIndex:1, filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.25))' }} />}
         </div>
 
         {/* SMASH CARD */}
-        <div onClick={() => selectMarca('SMASH')} style={{ borderRadius:'20px', cursor:'pointer', marginBottom:'24px', background:'linear-gradient(135deg,#0052CC,#0066FF)', boxShadow:'0 4px 20px rgba(0,82,204,0.3)', padding:'20px', display:'flex', alignItems:'center', gap:'14px', position:'relative', overflow:'hidden' }}>
-          <img src="/logos/logo-smash.png" style={{ width:'60px', height:'60px', borderRadius:'16px', objectFit:'cover', flexShrink:0, boxShadow:'0 4px 12px rgba(0,0,0,0.2)', position:'relative', zIndex:2 }} alt="Smash Lovers" />
+        <div onClick={() => selectMarca('SMASH')} style={{ borderRadius:'18px', cursor:'pointer', marginBottom:'20px', background:'linear-gradient(135deg,#0052CC,#0066FF)', boxShadow:'0 4px 16px rgba(0,82,204,0.25)', padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px', position:'relative', overflow:'hidden', minHeight:'80px' }}>
+          <img src="/logos/logo-smash.png" style={{ width:'52px', height:'52px', borderRadius:'14px', objectFit:'cover', flexShrink:0, boxShadow:'0 3px 10px rgba(0,0,0,0.2)', position:'relative', zIndex:2 }} alt="Smash Lovers" />
           <div style={{ flex:1, position:'relative', zIndex:2 }}>
-            <div style={{ fontFamily:'var(--font-display)', fontSize:'22px', fontWeight:800, color:'white' }}>Smash Lovers</div>
-            <div style={{ color:'rgba(255,255,255,0.7)', fontSize:'13px', marginTop:'2px' }}>Smash burgers de autor</div>
+            <div style={{ fontFamily:"'Poppins', var(--font-display)", fontSize:'19px', fontWeight:700, color:'white' }}>Smash Lovers</div>
+            <div style={{ fontFamily:"'Plus Jakarta Sans', var(--font-body)", color:'rgba(255,255,255,0.75)', fontSize:'12px', marginTop:'2px' }}>Smash burgers de autor</div>
             <div style={{ background:'rgba(255,255,255,0.18)', color:'white', fontSize:'11px', fontWeight:700, padding:'3px 10px', borderRadius:'999px', marginTop:'6px', display:'inline-block' }}>🆕 Nuevo · Lanzamiento</div>
           </div>
           <span style={{ color:'rgba(255,255,255,0.5)', fontSize:'24px', position:'relative', zIndex:2 }}>›</span>
-          {heroSmash && <img src={heroSmash} alt="" style={{ position:'absolute', right:'-8px', bottom:'-8px', height:'115px', objectFit:'contain', pointerEvents:'none', zIndex:1, filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.3))' }} />}
+          {heroSmash && <img src={heroSmash} alt="" style={{ position:'absolute', right:'-4px', bottom:'-4px', height:'90px', objectFit:'contain', pointerEvents:'none', zIndex:1, filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.25))' }} />}
         </div>
 
         {/* PEDIDOS ACTIVOS */}
