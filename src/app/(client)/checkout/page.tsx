@@ -156,7 +156,7 @@ export default function CheckoutPage() {
       formData.append('loyaltyAplicado', String(loyaltyAplicado))
       formData.append('promoCode', promoResult?.valid ? (promoResult.code || '') : '')
       formData.append('promoType', promoResult?.type || '')
-      formData.append('items', JSON.stringify(items.map(i => ({ productId: i.product.id, cantidad: i.cantidad, notas: i.notas }))))
+      formData.append('items', JSON.stringify(items.map(i => ({ productId: i.product.id, cantidad: i.cantidad, notas: i.notas, modifiers: i.modifiers || [] }))))
       if (deliveryLat) formData.append('lat', String(deliveryLat))
       if (deliveryLng) formData.append('lng', String(deliveryLng))
 

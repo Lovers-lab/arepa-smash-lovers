@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const deliveryLng = formData.get('lng') ? parseFloat(formData.get('lng') as string) : null
     const notasCliente = formData.get('notasCliente') as string
     const loyaltyAplicado = Number(formData.get('loyaltyAplicado') || 0)
-    const items: Array<{ productId: string; cantidad: number; notas?: string }> = JSON.parse(formData.get('items') as string)
+    const items: Array<{ productId: string; cantidad: number; notas?: string; modifiers?: Array<{groupId:string;groupNombre:string;optionId:string;optionNombre:string;precioExtra:number}> }> = JSON.parse(formData.get('items') as string)
     const comprobante = formData.get('comprobante') as File | null
 
     if (!userId || !marca || !metodoPago || !items?.length) {
@@ -132,6 +132,30 @@ export async function POST(request: NextRequest) {
     await supabase.from('order_items').insert(
       orderItemsData.map(item => ({ ...item, order_id: order.id }))
     )
+
+    // 6b. Insert order item modifiers
+    const orderItemsInserted = await supabase.from('order_items').select('id, product_id').eq('order_id', order.id)
+    if (orderItemsInserted.data) {
+      const modifierRows: any[] = []
+      for (const item of items) {
+        if (!item.modifiers?.length) continue
+        const orderItem = orderItemsInserted.data.find((oi: any) => oi.product_id === item.productId)
+        if (!orderItem) continue
+        for (const mod of item.modifiers) {
+          modifierRows.push({
+            order_item_id: orderItem.id,
+            modifier_group_id: mod.groupId,
+            modifier_option_id: mod.optionId,
+            group_nombre: mod.groupNombre,
+            option_nombre: mod.optionNombre,
+            precio_extra: mod.precioExtra || 0,
+          })
+        }
+      }
+      if (modifierRows.length > 0) {
+        await supabase.from('order_item_modifiers').insert(modifierRows)
+      }
+    }
 
     // 7. Mark welcome offer as used (regalo físico)
     if (offer) {
