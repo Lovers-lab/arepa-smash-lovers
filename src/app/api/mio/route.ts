@@ -69,8 +69,9 @@ export async function POST(request: NextRequest) {
     const mioText = await res.text()
     if (!res.ok) return NextResponse.json({ error: 'Error MIO status ' + res.status, details: mioText }, { status: 500 })
     const mioData = JSON.parse(mioText)
-    const checkoutUrl = mioData?.data?.links?.checkout
-    const mioOrderId = mioData?.data?.id
+    const checkoutUrl = mioData?.data?.links?.checkout || mioData?.links?.checkout || mioData?.checkout_url
+    const mioOrderId = mioData?.data?.id || mioData?.id
+    console.log('MIO full response:', JSON.stringify(mioData))
 
     await fetch(SUPA_URL + '/rest/v1/orders?id=eq.' + orderId, {
       method: 'PATCH',
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ mio_order_id: mioOrderId, mio_checkout_url: checkoutUrl }),
     })
 
-    return NextResponse.json({ success: true, checkoutUrl, mioOrderId })
+    return NextResponse.json({ success: true, checkoutUrl, mioOrderId, debug: mioData })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
