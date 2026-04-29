@@ -2,9 +2,9 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminClient } from '@/lib/supabase/admin'
 
-const supabase = createClient()
+const supabase = createAdminClient()
 
 const STAR_LABELS: Record<number, string> = {
   1: 'Muy malo', 2: 'Malo', 3: 'Regular', 4: 'Bueno', 5: 'Excelente'

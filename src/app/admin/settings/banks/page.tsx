@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminClient } from '@/lib/supabase/admin'
 
-const supabase = createClient()
+const supabase = createAdminClient()
 
 interface BankAccount {
   id: string

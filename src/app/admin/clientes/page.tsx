@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminClient } from '@/lib/supabase/admin'
 
-const supabase = createClient()
+const supabase = createAdminClient()
 
 interface Cliente {
   id: string; nombre: string; whatsapp: string;

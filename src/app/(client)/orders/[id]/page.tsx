@@ -36,6 +36,16 @@ export default function OrderTrackingPage() {
   const [tracking, setTracking] = useState<any>(null)
 
   useEffect(() => {
+    if (pagoStatus === 'exitoso') {
+      fetch(`/api/mio?orderId=${id}`)
+        .then(r => r.json())
+        .then(() => {
+          localStorage.removeItem('lovers_cart')
+          setTimeout(() => router.replace('/'), 1500)
+        })
+        .catch(() => router.replace('/'))
+      return
+    }
     loadOrder()
     const channel = supabase.channel(`order_${id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` },

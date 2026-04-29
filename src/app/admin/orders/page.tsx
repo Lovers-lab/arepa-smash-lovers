@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { Order, OrderStatus, Marca } from '@/types'
 
-const supabase = createClient()
+const supabase = createAdminClient()
 function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
 
 const STATUS_LABELS: Partial<Record<OrderStatus, string>> = {

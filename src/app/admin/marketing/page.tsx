@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { Marca } from '@/types'
 
-const supabase = createClient()
+const supabase = createAdminClient()
 
 const PRESETS = {
   DEFAULT_AREPA:     { color_primario: '#C41E3A', color_secundario: '#E63946', color_botones: '#C41E3A', color_links: '#C41E3A', color_bordes: '#E63946', color_texto: '#FFFFFF', color_fondo: '#FFFFFF' },

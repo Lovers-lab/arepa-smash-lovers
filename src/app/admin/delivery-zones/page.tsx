@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminClient } from '@/lib/supabase/admin'
 
-const supabase = createClient()
+const supabase = createAdminClient()
 const GMAPS_KEY = 'AIzaSyA4BFabr0k5BGhpVQQLldixCRQNHuoCZuM'
 
 interface Zone {

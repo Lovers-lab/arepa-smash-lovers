@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { AdminUser } from '@/types'
 
-const supabase = createClient()
+const supabase = createAdminClient()
 
 export default function AdminUsersPage() {
   const [admins, setAdmins] = useState<AdminUser[]>([])
