@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       minimo_compra: Number(c.minimo_compra || 0),
       discount_pct: c.tipo === 'porcentaje' ? Number(c.valor) : 0,
       discount_fijo: c.tipo === 'fijo' ? Number(c.valor) : 0,
-      label: c.descripcion || (c.tipo === 'fijo' ? \`RD$\${c.valor} de descuento\` : \`\${c.valor}% de descuento\`),
+      label: c.descripcion || (c.tipo === 'fijo' ? 'RD$' + c.valor + ' de descuento' : c.valor + '% de descuento'),
     })
   }
 
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       minimo_compra: Number(coupon.minimo_compra || 0),
       discount_pct: coupon.tipo === 'porcentaje' ? Number(coupon.valor) : 0,
       discount_fijo: coupon.tipo === 'fijo' ? Number(coupon.valor) : 0,
-      label: coupon.descripcion || (coupon.tipo === 'fijo' ? \`RD$\${coupon.valor} de descuento\` : \`\${coupon.valor}% de descuento\`),
+      label: coupon.descripcion || (coupon.tipo === 'fijo' ? 'RD$' + coupon.valor + ' de descuento' : coupon.valor + '% de descuento'),
     })
   }
 
