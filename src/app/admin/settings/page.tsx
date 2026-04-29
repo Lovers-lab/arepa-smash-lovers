@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/client'
 import type { Marca } from '@/types'
 
-const supabase = createAdminClient()
+const supabase = createClient()
 const DIAS = ['lun','mar','mie','jue','vie','sab','dom']
 const DIAS_LABELS: Record<string, string> = { lun:'Lun', mar:'Mar', mie:'Mié', jue:'Jue', vie:'Vie', sab:'Sáb', dom:'Dom' }
 

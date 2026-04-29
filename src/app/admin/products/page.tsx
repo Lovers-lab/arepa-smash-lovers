@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/client'
 import type { Product, Category, Marca } from '@/types'
 import ModifierManager from '@/components/menu/ModifierManager'
 
-const supabase = createAdminClient()
+const supabase = createClient()
 function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
 
 interface PForm { nombre: string; descripcion: string; precio: string; category_id: string; activo: boolean; foto_url: string; es_destacado: boolean; descuento_pct: string }

@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/client'
 import type { Reminder, PendingInvoice } from '@/types'
 
-const supabase = createAdminClient()
+const supabase = createClient()
 function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
 
 function daysUntil(dateStr: string) {

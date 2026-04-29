@@ -2,10 +2,10 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState, useRef } from 'react'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/client'
 import type { Order, OrderStatus } from '@/types'
 
-const supabase = createAdminClient()
+const supabase = createClient()
 
 function formatRD(n: number) { return `RD$${n.toLocaleString('es-DO')}` }
 function timeAgo(ts: string) {
