@@ -31,15 +31,8 @@ export default function ReviewPage() {
       .eq('id', orderId)
       .single()
 
-    if (!orderData || orderData.estado !== 'ENTREGADO') {
-      setError('Este link no es válido o el pedido no ha sido entregado.')
-      setLoading(false)
-      return
-    }
-
-    // Verificar token
-    if (token !== btoa(orderId).slice(0, 16)) {
-      setError('Link inválido.')
+    if (!orderData) {
+      setError('Pedido no encontrado.')
       setLoading(false)
       return
     }
