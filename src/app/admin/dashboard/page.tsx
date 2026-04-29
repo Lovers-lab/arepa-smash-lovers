@@ -199,6 +199,17 @@ export default function AdminDashboard() {
         window.open('https://wa.me/' + phone + '?text=' + msg, '_blank')
       }
     }
+    // Al despachar: solicitar repartidor en PedidosYa al instante
+    if (nextEstado === 'EN_CAMINO') {
+      fetch('/api/pedidosya', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, test: false }),
+      }).then(r => r.json()).then(data => {
+        if (!data.success) console.error('PedidosYa error:', data)
+      }).catch(err => console.error('PedidosYa fetch error:', err))
+    }
+
     if (nextEstado === 'ENTREGADO') {
       const { data: od } = await supabase.from('orders').select('user_id, user:users(whatsapp)').eq('id', order.id).single()
       if ((od as any)?.user?.whatsapp) {
