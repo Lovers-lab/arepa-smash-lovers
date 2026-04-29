@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -16,7 +15,7 @@ const GROUPS = [
     ],
   },
   {
-    label: 'Catálogo',
+    label: 'Restaurante',
     items: [
       { href: '/admin/products',              label: 'Menú',          icon: 'menu_book' },
       { href: '/admin/delivery-zones',        label: 'Zonas',         icon: 'pin_drop' },
@@ -30,10 +29,11 @@ const GROUPS = [
       { href: '/admin/marketing/influencers', label: 'Influencers',   icon: 'star_person' },
       { href: '/admin/marketing/push',        label: 'Notif. Push',   icon: 'notifications' },
       { href: '/admin/coupons',               label: 'Cupones',       icon: 'confirmation_number' },
+      { href: '/admin/reports',               label: 'Reportes',      icon: 'bar_chart' },
     ],
   },
   {
-    label: 'Sistema',
+    label: 'Config',
     items: [
       { href: '/admin/settings',              label: 'Config',        icon: 'settings' },
       { href: '/admin/settings/banks',        label: 'Bancos',        icon: 'account_balance' },
@@ -47,16 +47,16 @@ const MOBILE_ITEMS = [
   { href: '/admin/orders',     label: 'Historial', icon: 'receipt_long' },
   { href: '/admin/products',   label: 'Menú',      icon: 'menu_book' },
   { href: '/admin/clientes',   label: 'Clientes',  icon: 'group' },
-  { href: '/admin/reviews',    label: 'Reseñas',   icon: 'star' },
-  { href: '/admin/coupons',   label: 'Cupones',   icon: 'confirmation_number' },
+  { href: '/admin/coupons',    label: 'Cupones',   icon: 'confirmation_number' },
   { href: '/admin/settings',   label: 'Config',    icon: 'settings' },
 ]
 
-function MIcon({ name, size = 20, color }: { name: string; size?: number; color?: string }) {
+function MIcon({ name, size = 20, color = 'currentColor' }: { name: string; size?: number; color?: string }) {
   return (
-    <span className="material-symbols-rounded" style={{
+    <span style={{
+      fontFamily: 'Material Symbols Rounded',
       fontSize: size,
-      color: color || 'inherit',
+      color,
       lineHeight: 1,
       userSelect: 'none',
       fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
@@ -70,6 +70,7 @@ export default function AdminNav() {
   const [newOrders, setNewOrders] = useState(0)
   const [alerting, setAlerting] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pathname = usePathname()
 
   function playTone() {
     try {
@@ -89,7 +90,8 @@ export default function AdminNav() {
 
   useEffect(() => {
     const supabase = createClient()
-    const ch = supabase.channel('admin_nav_alerts')
+    const ch = supabase
+      .channel('admin_nav_new_orders')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, ({ new: o }) => {
         if ((o as any).estado === 'BORRADOR') return
         setNewOrders(n => n + 1)
@@ -99,22 +101,23 @@ export default function AdminNav() {
         intervalRef.current = setInterval(playTone, 3000)
       })
       .subscribe()
-    return () => { supabase.removeChannel(ch); if (intervalRef.current) clearInterval(intervalRef.current) }
+    return () => {
+      supabase.removeChannel(ch)
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
   }, [])
 
   function clearAlert() {
-    setNewOrders(0); setAlerting(false)
+    setNewOrders(0)
+    setAlerting(false)
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
   }
-  const pathname = usePathname()
+
+  const isDashboard = (href: string) => href === '/admin/dashboard'
 
   return (
     <>
-      {/* Material Symbols font */}
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
-      />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
       <style>{`
         .anav-item {
@@ -138,12 +141,12 @@ export default function AdminNav() {
           padding: 16px 20px 5px; margin: 0;
         }
         .material-symbols-rounded { font-family: 'Material Symbols Rounded'; font-style: normal; display: inline-block; }
-        @keyframes navPulse { 0%,100%{background:#FEF2F2} 50%{background:#FECACA;box-shadow:0 0 0 4px rgba(220,38,38,0.15)} }
-        .nav-alert { animation: navPulse 1s infinite !important; color:#DC2626 !important; font-weight:700 !important; }
+        @keyframes navPulse { 0%,100%{background:#FEF2F2} 50%{background:#FECACA;box-shadow:0 0 0 4px rgba(220,38,38,0.2)} }
+        .nav-alert { animation: navPulse 0.8s infinite !important; color:#DC2626 !important; font-weight:800 !important; }
         .nav-alert .anav-icon { background:#FEE2E2 !important; }
       `}</style>
 
-      {/* ── DESKTOP SIDEBAR ── */}
+      {/* DESKTOP SIDEBAR */}
       <nav style={{
         display: 'none', flexDirection: 'column',
         position: 'fixed', left: 0, top: 0, bottom: 0, width: '220px',
@@ -173,16 +176,20 @@ export default function AdminNav() {
               <p className="anav-group-label">{group.label}</p>
               {group.items.map(item => {
                 const isActive = pathname === item.href
+                const isAlert = alerting && isDashboard(item.href)
                 return (
-                  <Link key={item.href} href={item.href}
-                    onClick={item.href === '/admin/dashboard' ? clearAlert : undefined}
-                    className={`anav-item${isActive ? ' active' : ''}${alerting && item.href === '/admin/dashboard' ? ' nav-alert' : ''}`}>
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={isDashboard(item.href) ? clearAlert : undefined}
+                    className={`anav-item${isActive ? ' active' : ''}${isAlert ? ' nav-alert' : ''}`}
+                  >
                     <span className="anav-icon">
-                      <MIcon name={item.icon} size={18} color={alerting && item.href === '/admin/dashboard' ? '#DC2626' : isActive ? '#C41E3A' : '#9CA3AF'} />
+                      <MIcon name={item.icon} size={18} color={isAlert ? '#DC2626' : isActive ? '#C41E3A' : '#9CA3AF'} />
                     </span>
                     {item.label}
-                    {alerting && item.href === '/admin/dashboard' && (
-                      <span style={{ marginLeft:'auto', background:'#DC2626', color:'white', borderRadius:999, fontSize:10, fontWeight:800, padding:'2px 7px' }}>
+                    {isAlert && (
+                      <span style={{ marginLeft: 'auto', background: '#DC2626', color: 'white', borderRadius: 999, fontSize: 10, fontWeight: 800, padding: '2px 7px', flexShrink: 0 }}>
                         {newOrders}
                       </span>
                     )}
@@ -193,15 +200,12 @@ export default function AdminNav() {
           ))}
         </div>
 
-        {/* Footer */}
         <div style={{ padding: '10px 16px', borderTop: '1px solid #F3F4F6' }}>
-          <p style={{ fontSize: '10px', color: '#D1D5DB', textAlign: 'center', margin: 0 }}>
-            Arepa & Smash Lovers © 2026
-          </p>
+          <p style={{ fontSize: '10px', color: '#D1D5DB', textAlign: 'center', margin: 0 }}>Arepa & Smash Lovers © 2026</p>
         </div>
       </nav>
 
-      {/* ── MOBILE BOTTOM NAV ── */}
+      {/* MOBILE BOTTOM NAV */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: 'white', borderTop: '1px solid #F0F2F5',
@@ -211,32 +215,39 @@ export default function AdminNav() {
       }} className="admin-mobile-nav">
         <style>{`@media(min-width:1024px){.admin-mobile-nav{display:none!important}}`}</style>
         {MOBILE_ITEMS.map(item => {
-          const isActive = pathname === item.href ||
-            (item.href !== '/admin/dashboard' && pathname?.startsWith(item.href))
+          const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && pathname?.startsWith(item.href))
+          const isAlert = alerting && isDashboard(item.href)
           return (
-            <Link key={item.href} href={item.href}
-              onClick={item.href === '/admin/dashboard' ? clearAlert : undefined}
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={isDashboard(item.href) ? clearAlert : undefined}
               style={{
                 flex: 1, display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: '3px', padding: '10px 4px 8px', textDecoration: 'none',
-                color: alerting && item.href === '/admin/dashboard' ? '#DC2626' : isActive ? '#C41E3A' : '#9CA3AF',
+                color: isAlert ? '#DC2626' : isActive ? '#C41E3A' : '#9CA3AF',
                 transition: 'color 0.15s', position: 'relative',
-              }}>
-              {alerting && item.href === '/admin/dashboard' && (
-                <span style={{ position:'absolute', top:4, right:'calc(50% - 18px)', background:'#DC2626', color:'white', borderRadius:999, fontSize:9, fontWeight:800, padding:'1px 5px', lineHeight:1.5 }}>
+                animation: isAlert ? 'navPulse 0.8s infinite' : 'none',
+                borderRadius: 8,
+              }}
+            >
+              {isAlert && (
+                <span style={{
+                  position: 'absolute', top: 4, right: 'calc(50% - 20px)',
+                  background: '#DC2626', color: 'white', borderRadius: 999,
+                  fontSize: 9, fontWeight: 800, padding: '1px 5px', lineHeight: 1.5,
+                }}>
                   {newOrders}
                 </span>
               )}
               <span className="material-symbols-rounded" style={{
                 fontSize: 24,
-                fontVariationSettings: isActive
-                  ? "'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24"
-                  : "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
+                fontVariationSettings: isActive ? "'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24" : "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
               }}>
                 {item.icon}
               </span>
-              <span style={{ fontSize: '10px', fontWeight: isActive ? 700 : 500 }}>{item.label}</span>
+              <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 500 }}>{item.label}</span>
             </Link>
           )
         })}
