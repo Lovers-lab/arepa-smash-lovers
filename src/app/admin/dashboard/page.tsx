@@ -250,8 +250,9 @@ export default function AdminDashboard() {
           {[
             { id: 'activos', label: `Activos (${active.length})` },
             { id: 'historial', label: 'Historial' },
+          { id: 'reportes', label: 'Reportes', href: '/admin/reports' },
           ].map(t => (
-            <button key={t.id} onClick={() => { setTab(t.id as any); if (t.id === 'historial') loadHistorial() }}
+            <button key={t.id} onClick={() => { if ((t as any).href) { window.location.href = (t as any).href; return; } setTab(t.id as any); if (t.id === 'historial') loadHistorial() }}
               className="mbtn"
               style={{ padding: '7px 16px', borderRadius: 8, fontSize: 13, background: tab === t.id ? '#111' : '#F3F4F6', color: tab === t.id ? 'white' : '#6B7280' }}>
               {t.label}
