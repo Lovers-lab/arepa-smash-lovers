@@ -105,7 +105,7 @@ export default function CheckoutPage() {
   async function checkPromoCode() {
     if (!promoCode.trim() || !user) return
     setCheckingPromo(true)
-    const res = await fetch(`/api/codes/validate?code=${encodeURIComponent(promoCode.trim())}&userId=${user.id}`)
+    const res = await fetch(`/api/codes/validate?code=${encodeURIComponent(promoCode.trim())}&userId=${user.id}&subtotal=${subtotal}`)
     const data = await res.json()
     setPromoResult(data); setCheckingPromo(false)
   }
@@ -134,7 +134,11 @@ export default function CheckoutPage() {
   }
 
   const subtotal = items.reduce((a, i) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0)
-  const promoDiscount = promoResult?.valid ? Math.round(subtotal * (promoResult.discount_pct || 0) / 100) : 0
+  const promoDiscount = promoResult?.valid
+    ? promoResult.tipo === 'fijo'
+      ? Math.min(promoResult.discount_fijo || 0, subtotal)
+      : Math.round(subtotal * (promoResult.discount_pct || 0) / 100)
+    : 0
   const totalPostDesc = Math.max(0, subtotal - loyaltyAplicado - promoDiscount)
   const envio = deliveryZone 
     ? (deliveryZone.envio_gratis_umbral === 0 ? 0 : calculateShipping(totalPostDesc, deliveryZone.envio_gratis_umbral, deliveryZone.precio_envio))
@@ -156,6 +160,8 @@ export default function CheckoutPage() {
       formData.append('loyaltyAplicado', String(loyaltyAplicado))
       formData.append('promoCode', promoResult?.valid ? (promoResult.code || '') : '')
       formData.append('promoType', promoResult?.type || '')
+      formData.append('couponId', promoResult?.valid ? (promoResult.coupon_id || '') : '')
+      formData.append('userCouponId', promoResult?.valid ? (promoResult.user_coupon_id || '') : '')
       formData.append('items', JSON.stringify(items.map(i => ({ productId: i.product.id, cantidad: i.cantidad, notas: i.notas, modifiers: i.modifiers || [] }))))
       if (deliveryLat) formData.append('lat', String(deliveryLat))
       if (deliveryLng) formData.append('lng', String(deliveryLng))

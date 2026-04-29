@@ -13,6 +13,10 @@ export async function POST(request: NextRequest) {
     const deliveryLat = formData.get('lat') ? parseFloat(formData.get('lat') as string) : null
     const deliveryLng = formData.get('lng') ? parseFloat(formData.get('lng') as string) : null
     const notasCliente = formData.get('notasCliente') as string
+    const promoCode = formData.get('promoCode') as string
+    const promoType = formData.get('promoType') as string
+    const couponId = formData.get('couponId') as string
+    const userCouponId = formData.get('userCouponId') as string
     const loyaltyAplicado = Number(formData.get('loyaltyAplicado') || 0)
     const items: Array<{ productId: string; cantidad: number; notas?: string; modifiers?: Array<{groupId:string;groupNombre:string;optionId:string;optionNombre:string;precioExtra:number}> }> = JSON.parse(formData.get('items') as string)
     const comprobante = formData.get('comprobante') as File | null
@@ -154,6 +158,17 @@ export async function POST(request: NextRequest) {
       }
       if (modifierRows.length > 0) {
         await supabase.from('order_item_modifiers').insert(modifierRows)
+      }
+    }
+
+    // 6c. Marcar cupón como usado
+    if (couponId && promoType === 'CUPON') {
+      if (userCouponId) {
+        // Cupón asignado al usuario
+        await supabase.from('user_coupons').update({ usado: true, usado_at: new Date().toISOString(), orden_id: order.id }).eq('id', userCouponId)
+      } else {
+        // Cupón global — registrar uso
+        await supabase.from('user_coupons').insert({ user_id: userId, coupon_id: couponId, usado: true, usado_at: new Date().toISOString(), orden_id: order.id })
       }
     }
 
