@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         costo_envio: costoEnvio,
         total_pagado: totalPagado,
         loyalty_aplicado: loyaltyAplicado,
-        notas_cliente: `${direccion}${notasCliente ? ' · ' + notasCliente : ''}`,
+        notas_cliente: notasCliente || null,
         direccion_texto: direccion,
         delivery_lat: deliveryLat,
         delivery_lng: deliveryLng,

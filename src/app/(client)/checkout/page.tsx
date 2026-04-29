@@ -220,7 +220,7 @@ export default function CheckoutPage() {
               {deliveryZone ? (
                 <MapPicker brandColor={brandColor} zonaPoligono={deliveryZone.poligono}
                   precioEnvio={deliveryZone.precio_envio} envioGratisUmbral={deliveryZone.envio_gratis_umbral} subtotal={subtotal}
-                  onLocationSelected={(lat, lng, address) => {
+                  onLocationSelected={(lat, lng, address) => { if (address && address.length > 5) setDireccion(address);
                     setDeliveryLat(lat); setDeliveryLng(lng); setDireccion(address)
                     const poly = deliveryZone.poligono || []
                     if (poly.length >= 3) {
