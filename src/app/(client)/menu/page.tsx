@@ -310,6 +310,7 @@ export default function MenuPage() {
                   return (
                     <div key={product.id}
                       onClick={() => setPreviewProduct(product)}
+                      onClick={() => setPreviewProduct(product)}
                       style={{ background:'white', borderRadius:'20px', border:'1px solid #E8EAED', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 2px 8px rgba(0,0,0,0.04)', transition:'transform 0.15s, box-shadow 0.15s', cursor:'pointer', WebkitTapHighlightColor:'transparent' }}>
 
                       {/* Image */}
