@@ -15,9 +15,9 @@ function timeAgo(ts: string) {
   return `${Math.floor(mins / 60)}h`
 }
 
-const FLUJO: Record<string, { label: string; next: string; nextLabel: string; color: string; bg: string; dot: string }> = {
-  PENDIENTE:        { label: 'Nuevo',      next: 'EN_COCINA', nextLabel: 'Enviar a cocina', color: '#DC2626', bg: '#FEF2F2', dot: '#DC2626' },
-  PAGADO:           { label: 'Pagado',     next: 'EN_COCINA', nextLabel: 'Enviar a cocina', color: '#7C3AED', bg: '#F5F3FF', dot: '#7C3AED' },
+const FLUJO: Record<string, { label: string; next: string; nextLabel: string; color: string; bg: string; dot: string; sendWA?: boolean }> = {
+  PENDIENTE:        { label: 'Nuevo',      next: 'EN_COCINA', nextLabel: 'Aceptar pedido',  color: '#DC2626', bg: '#FEF2F2', dot: '#DC2626', sendWA: true },
+  PAGADO:           { label: 'Pagado',     next: 'EN_COCINA', nextLabel: 'Aceptar pedido',  color: '#7C3AED', bg: '#F5F3FF', dot: '#7C3AED', sendWA: true },
   EN_COCINA:        { label: 'En cocina',  next: 'LISTO',     nextLabel: 'Marcar listo',    color: '#D97706', bg: '#FFFBEB', dot: '#D97706' },
   LISTO:            { label: 'Listo',      next: 'EN_CAMINO', nextLabel: 'Despachar',       color: '#0284C7', bg: '#F0F9FF', dot: '#0284C7' },
   EN_CAMINO:        { label: 'En camino',  next: 'ENTREGADO', nextLabel: 'Entregado',       color: '#059669', bg: '#ECFDF5', dot: '#059669' },
@@ -112,9 +112,14 @@ export default function AdminDashboard() {
   useEffect(() => {
     checkAuth(); loadOrders(); loadStats()
     const ch = supabase.channel('dashboard_v3')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, ({ new: o }) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, async ({ new: o }) => {
         if ((o as any).estado === 'BORRADOR') return
-        setOrders(p => [o as Order, ...p])
+        // Fetch completo con joins para tener items, user, etc.
+        const { data: full } = await supabase.from('orders')
+          .select('*, user:users(nombre,whatsapp), items:order_items(*, product:products(nombre,precio), modifiers:order_item_modifiers(option_nombre,group_nombre,precio_extra))')
+          .eq('id', (o as any).id).single()
+        const order = (full || o) as Order
+        setOrders(p => [order, ...p])
         setNewIds(p => new Set([...p, (o as any).id]))
         startAlertLoop((o as any).id)
         loadStats()
@@ -184,6 +189,16 @@ export default function AdminDashboard() {
       ...(nextEstado === 'LISTO' ? { hora_listo: new Date().toISOString() } : {}),
       ...(nextEstado === 'ENTREGADO' ? { hora_entregado: new Date().toISOString() } : {}),
     }).eq('id', order.id)
+    // Al aceptar: enviar WA al cliente
+    const flujoActual = FLUJO[(order as any).estado]
+    if (flujoActual?.sendWA) {
+      const user = (order as any).user
+      if (user?.whatsapp) {
+        const phone = user.whatsapp.replace(/\D/g, '')
+        const msg = encodeURIComponent(`Hola ${user.nombre} 👋, recibimos tu pedido *#${(order as any).numero_pedido}* y estamos verificando el pago. Te avisamos cuando esté en cocina 🍽️`)
+        window.open(\`https://wa.me/\${phone}?text=\${msg}\`, '_blank')
+      }
+    }
     if (nextEstado === 'ENTREGADO') {
       const { data: od } = await supabase.from('orders').select('user_id, user:users(whatsapp)').eq('id', order.id).single()
       if ((od as any)?.user?.whatsapp) {
@@ -366,25 +381,33 @@ function OrderCard({ order, isNew, isAlert, isSelected, onClick, onAction, loadi
   const items = (order as any).items || []
   const hora = new Date((order as any).fecha_orden).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })
   const tieneComprobante = !!(order as any).comprobante_url
+  const marcaColor = order.marca === 'AREPA' ? '#C41E3A' : '#0052CC'
+  const marcaBg = order.marca === 'AREPA' ? '#FEF2F2' : '#EFF6FF'
+  const marcaLogo = order.marca === 'AREPA' ? '/logos/logo-arepa-bw.jpg' : '/logos/logo-smash-bw.png'
+  const borderColor = isSelected ? '#111' : isNew ? marcaColor : '#EBEBEB'
+  const cardBg = isNew ? (order.marca === 'AREPA' ? '#FFF5F5' : '#EFF6FF') : 'white'
 
   return (
     <div onClick={onClick} className={`ocard ${isAlert ? 'alert-pulse' : ''}`}
-      style={{ background: isNew ? '#FFF5F5' : 'white', border: `1.5px solid ${isSelected ? '#111' : isNew ? '#FCA5A5' : '#EBEBEB'}`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, animation: 'fadeUp 0.2s ease' }}>
-      <div style={{ width: 44, height: 44, borderRadius: 12, background: isNew ? '#DC2626' : (flujo?.bg || '#F3F4F6'), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        {isNew ? <span style={{ color: 'white', fontSize: 16, fontWeight: 800 }}>!</span> : <span style={{ fontSize: 22 }}>{order.marca === 'AREPA' ? '🫓' : '🍔'}</span>}
+      style={{ background: cardBg, border: `1.5px solid ${borderColor}`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, animation: 'fadeUp 0.2s ease' }}>
+      <div style={{ width: 44, height: 44, borderRadius: 12, overflow: 'hidden', background: isNew ? marcaColor : marcaBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: isNew ? 'none' : \`1.5px solid \${marcaColor}30\` }}>
+        {isNew
+          ? <img src={marcaLogo} alt={order.marca} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
+          : <img src={marcaLogo} alt={order.marca} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        }
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
           <span style={{ fontWeight: 800, fontSize: 15, color: '#111' }}>#{(order as any).numero_pedido}</span>
           {isNew
-            ? <span style={{ fontSize: 10, fontWeight: 800, color: 'white', background: '#DC2626', padding: '2px 8px', borderRadius: 999 }}>NUEVO PEDIDO</span>
+            ? <span style={{ fontSize: 10, fontWeight: 800, color: 'white', background: marcaColor, padding: '2px 8px', borderRadius: 999 }}>NUEVO PEDIDO</span>
             : flujo && <span style={{ fontSize: 10, fontWeight: 700, color: flujo.color, background: flujo.bg, padding: '2px 8px', borderRadius: 999 }}>{flujo.label}</span>
           }
           {tieneComprobante && <span style={{ fontSize: 10, fontWeight: 700, color: '#0284C7', background: '#F0F9FF', padding: '2px 8px', borderRadius: 999 }}>📎 Comprobante</span>}
         </div>
         <div style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>{user?.nombre || '—'}</div>
         <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1 }}>
-          {items.length} ítem{items.length !== 1 ? 's' : ''} · {hora} · {(order as any).metodo_pago}
+          {order.marca === 'AREPA' ? 'Arepa Lovers' : 'Smash Lovers'} · {items.length} ítem{items.length !== 1 ? 's' : ''} · {hora} · {(order as any).metodo_pago}
         </div>
       </div>
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -393,7 +416,7 @@ function OrderCard({ order, isNew, isAlert, isSelected, onClick, onAction, loadi
       </div>
       {flujo && (
         <button onClick={e => { e.stopPropagation(); onAction() }} disabled={loading} className="mbtn"
-          style={{ padding: '9px 16px', borderRadius: 8, fontSize: 12, flexShrink: 0, background: isNew ? '#DC2626' : '#111', color: 'white', opacity: loading ? 0.6 : 1 }}>
+          style={{ padding: '9px 16px', borderRadius: 8, fontSize: 12, flexShrink: 0, background: isNew ? marcaColor : '#111', color: 'white', opacity: loading ? 0.6 : 1 }}>
           {loading ? '···' : flujo.nextLabel}
         </button>
       )}
@@ -422,7 +445,7 @@ function OrderPanel({ order, onClose, onAction, onCancel, onPrint, onWhatsApp, l
         <div>
           <div style={{ fontWeight: 800, fontSize: 18, color: '#111' }}>Pedido #{(order as any).numero_pedido}</div>
           <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1 }}>
-            {new Date((order as any).fecha_orden).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })} · {order.marca}
+            {new Date((order as any).fecha_orden).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })} · {order.marca === 'AREPA' ? 'AREPA LOVERS' : 'SMASH LOVERS'}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
