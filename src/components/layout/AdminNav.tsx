@@ -27,6 +27,7 @@ const GROUPS = [
       { href: '/admin/marketing',             label: 'Colores',       icon: 'palette' },
       { href: '/admin/marketing/influencers', label: 'Influencers',   icon: 'star_person' },
       { href: '/admin/marketing/push',        label: 'Notif. Push',   icon: 'notifications' },
+      { href: '/admin/coupons',               label: 'Cupones',       icon: 'confirmation_number' },
     ],
   },
   {
@@ -45,6 +46,7 @@ const MOBILE_ITEMS = [
   { href: '/admin/products',   label: 'Menú',      icon: 'menu_book' },
   { href: '/admin/clientes',   label: 'Clientes',  icon: 'group' },
   { href: '/admin/reviews',    label: 'Reseñas',   icon: 'star' },
+  { href: '/admin/coupons',   label: 'Cupones',   icon: 'confirmation_number' },
   { href: '/admin/settings',   label: 'Config',    icon: 'settings' },
 ]
 
