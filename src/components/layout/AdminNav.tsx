@@ -1,4 +1,6 @@
 'use client'
+import { useEffect, useState, useRef } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -65,6 +67,45 @@ function MIcon({ name, size = 20, color }: { name: string; size?: number; color?
 }
 
 export default function AdminNav() {
+  const [newOrders, setNewOrders] = useState(0)
+  const [alerting, setAlerting] = useState(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  function playTone() {
+    try {
+      const ctx = new ((window as any).AudioContext || (window as any).webkitAudioContext)()
+      const notes = [{ f: 880, t: 0, d: 0.12 }, { f: 1100, t: 0.15, d: 0.12 }, { f: 1320, t: 0.30, d: 0.18 }]
+      notes.forEach(({ f, t, d }) => {
+        const o = ctx.createOscillator(), g = ctx.createGain()
+        o.connect(g); g.connect(ctx.destination)
+        o.type = 'sine'; o.frequency.value = f
+        g.gain.setValueAtTime(0, ctx.currentTime + t)
+        g.gain.linearRampToValueAtTime(0.4, ctx.currentTime + t + 0.02)
+        g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + t + d)
+        o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + d + 0.05)
+      })
+    } catch {}
+  }
+
+  useEffect(() => {
+    const supabase = createClient()
+    const ch = supabase.channel('admin_nav_alerts')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, ({ new: o }) => {
+        if ((o as any).estado === 'BORRADOR') return
+        setNewOrders(n => n + 1)
+        setAlerting(true)
+        playTone()
+        if (intervalRef.current) clearInterval(intervalRef.current)
+        intervalRef.current = setInterval(playTone, 3000)
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch); if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [])
+
+  function clearAlert() {
+    setNewOrders(0); setAlerting(false)
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+  }
   const pathname = usePathname()
 
   return (
@@ -97,6 +138,9 @@ export default function AdminNav() {
           padding: 16px 20px 5px; margin: 0;
         }
         .material-symbols-rounded { font-family: 'Material Symbols Rounded'; font-style: normal; display: inline-block; }
+        @keyframes navPulse { 0%,100%{background:#FEF2F2} 50%{background:#FECACA;box-shadow:0 0 0 4px rgba(220,38,38,0.15)} }
+        .nav-alert { animation: navPulse 1s infinite !important; color:#DC2626 !important; font-weight:700 !important; }
+        .nav-alert .anav-icon { background:#FEE2E2 !important; }
       `}</style>
 
       {/* ── DESKTOP SIDEBAR ── */}
@@ -130,11 +174,18 @@ export default function AdminNav() {
               {group.items.map(item => {
                 const isActive = pathname === item.href
                 return (
-                  <Link key={item.href} href={item.href} className={`anav-item${isActive ? ' active' : ''}`}>
+                  <Link key={item.href} href={item.href}
+                    onClick={item.href === '/admin/dashboard' ? clearAlert : undefined}
+                    className={`anav-item${isActive ? ' active' : ''}${alerting && item.href === '/admin/dashboard' ? ' nav-alert' : ''}`}>
                     <span className="anav-icon">
-                      <MIcon name={item.icon} size={18} color={isActive ? '#C41E3A' : '#9CA3AF'} />
+                      <MIcon name={item.icon} size={18} color={alerting && item.href === '/admin/dashboard' ? '#DC2626' : isActive ? '#C41E3A' : '#9CA3AF'} />
                     </span>
                     {item.label}
+                    {alerting && item.href === '/admin/dashboard' && (
+                      <span style={{ marginLeft:'auto', background:'#DC2626', color:'white', borderRadius:999, fontSize:10, fontWeight:800, padding:'2px 7px' }}>
+                        {newOrders}
+                      </span>
+                    )}
                   </Link>
                 )
               })}
@@ -163,12 +214,20 @@ export default function AdminNav() {
           const isActive = pathname === item.href ||
             (item.href !== '/admin/dashboard' && pathname?.startsWith(item.href))
           return (
-            <Link key={item.href} href={item.href} style={{
-              flex: 1, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              gap: '3px', padding: '10px 4px 8px', textDecoration: 'none',
-              color: isActive ? '#C41E3A' : '#9CA3AF', transition: 'color 0.15s',
-            }}>
+            <Link key={item.href} href={item.href}
+              onClick={item.href === '/admin/dashboard' ? clearAlert : undefined}
+              style={{
+                flex: 1, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                gap: '3px', padding: '10px 4px 8px', textDecoration: 'none',
+                color: alerting && item.href === '/admin/dashboard' ? '#DC2626' : isActive ? '#C41E3A' : '#9CA3AF',
+                transition: 'color 0.15s', position: 'relative',
+              }}>
+              {alerting && item.href === '/admin/dashboard' && (
+                <span style={{ position:'absolute', top:4, right:'calc(50% - 18px)', background:'#DC2626', color:'white', borderRadius:999, fontSize:9, fontWeight:800, padding:'1px 5px', lineHeight:1.5 }}>
+                  {newOrders}
+                </span>
+              )}
               <span className="material-symbols-rounded" style={{
                 fontSize: 24,
                 fontVariationSettings: isActive
