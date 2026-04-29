@@ -28,7 +28,7 @@ const WA_TEMPLATES = [
   { label: '✅ Confirmación', msg: (o: any) => `Hola ${o?.user?.nombre || ''} 👋, tu pedido *#${o?.numero_pedido}* ha sido confirmado y está en preparación 🍽️` },
   { label: '🍳 En cocina',    msg: (o: any) => `Hola ${o?.user?.nombre || ''}, tu pedido *#${o?.numero_pedido}* está siendo preparado 🔥` },
   { label: '🛵 En camino',    msg: (o: any) => `🛵 Tu pedido *#${o?.numero_pedido}* ya está en camino! Llegará en breve ❤️` },
-  { label: '⭐ Reseña',       msg: (o: any) => `Hola ${o?.user?.nombre || ''}, esperamos que hayas disfrutado tu pedido 😊 https://arepa-smash-app.vercel.app/review/${o?.id}` },
+  { label: '⭐ Reseña',       msg: (o: any) => 'Hola ' + (o?.user?.nombre || '') + ', esperamos que hayas disfrutado tu pedido 😊 Déjanos tu opinión: https://arepa-smash-app.vercel.app/review/' + o?.id + '?t=' + (o?.id ? btoa(o.id).slice(0, 16) : '') },
 ]
 
 function playTone(soundRef: React.MutableRefObject<boolean>) {
