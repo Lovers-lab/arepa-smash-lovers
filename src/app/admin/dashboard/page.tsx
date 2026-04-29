@@ -390,7 +390,7 @@ function OrderCard({ order, isNew, isAlert, isSelected, onClick, onAction, loadi
   return (
     <div onClick={onClick} className={`ocard ${isAlert ? 'alert-pulse' : ''}`}
       style={{ background: cardBg, border: `1.5px solid ${borderColor}`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, animation: 'fadeUp 0.2s ease' }}>
-      <div style={{ width: 44, height: 44, borderRadius: 12, overflow: 'hidden', background: isNew ? marcaColor : marcaBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: isNew ? 'none' : \`1.5px solid \${marcaColor}30\` }}>
+      <div style={{ width: 44, height: 44, borderRadius: 12, overflow: 'hidden', background: isNew ? marcaColor : marcaBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: isNew ? 'none' : ('1.5px solid ' + marcaColor + '30') }}>
         {isNew
           ? <img src={marcaLogo} alt={order.marca} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0) invert(1)', opacity: 0.9 }} />
           : <img src={marcaLogo} alt={order.marca} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
