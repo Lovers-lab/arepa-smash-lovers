@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const productIds = items.map(i => i.productId)
     const { data: products, error: prodError } = await supabase
       .from('products')
-      .select('id, precio, nombre, activo')
+      .select('id, precio, nombre, activo, descuento_pct')
       .in('id', productIds)
 
     if (prodError || !products?.length) {
@@ -41,12 +41,14 @@ export async function POST(request: NextRequest) {
     const orderItemsData = items.map(item => {
       const product = productMap.get(item.productId)
       if (!product || !product.activo) throw new Error(`Producto ${item.productId} no disponible`)
-      const subtotal = product.precio * item.cantidad
+      const descuentoPct = Number((product as any).descuento_pct || 0)
+      const precioFinal = descuentoPct > 0 ? Math.round(product.precio * (1 - descuentoPct / 100)) : product.precio
+      const subtotal = precioFinal * item.cantidad
       montoOriginal += subtotal
       return {
         product_id: item.productId,
         cantidad: item.cantidad,
-        precio_unitario: product.precio,
+        precio_unitario: precioFinal,
         subtotal,
         notas: item.notas || null,
       }
