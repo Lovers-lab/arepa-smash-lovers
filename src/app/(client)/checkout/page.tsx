@@ -158,10 +158,23 @@ export default function CheckoutPage() {
       formData.append('direccion', direccion)
       formData.append('notasCliente', notasCliente)
       formData.append('loyaltyAplicado', String(loyaltyAplicado))
-      formData.append('promoCode', promoResult?.valid ? (promoResult.code || '') : '')
-      formData.append('promoType', promoResult?.type || '')
-      formData.append('couponId', promoResult?.valid ? (promoResult.coupon_id || '') : '')
-      formData.append('userCouponId', promoResult?.valid ? (promoResult.user_coupon_id || '') : '')
+      // Re-validar cupon antes de crear el pedido
+      let finalPromo = promoResult
+      if (promoResult?.valid && promoResult?.type === 'CUPON') {
+        const recheck = await fetch('/api/codes/validate?code=' + encodeURIComponent(promoResult.code) + '&userId=' + user.id + '&subtotal=' + subtotal)
+        const recheckData = await recheck.json()
+        if (!recheckData.valid) {
+          setPromoResult({ valid: false, reason: recheckData.reason || 'Cupon no valido' })
+          setError(recheckData.reason || 'El cupon ya no es valido. Por favor intenta de nuevo.')
+          setSending(false)
+          return
+        }
+        finalPromo = recheckData
+      }
+      formData.append('promoCode', finalPromo?.valid ? (finalPromo.code || '') : '')
+      formData.append('promoType', finalPromo?.type || '')
+      formData.append('couponId', finalPromo?.valid ? (finalPromo.coupon_id || '') : '')
+      formData.append('userCouponId', finalPromo?.valid ? (finalPromo.user_coupon_id || '') : '')
       formData.append('items', JSON.stringify(items.map(i => ({ productId: i.product.id, cantidad: i.cantidad, notas: i.notas, modifiers: i.modifiers || [] }))))
       if (deliveryLat) formData.append('lat', String(deliveryLat))
       if (deliveryLng) formData.append('lng', String(deliveryLng))
