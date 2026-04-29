@@ -207,10 +207,15 @@ export default function MenuPage() {
   function addToCart(product: Product, modifiers: SelectedModifier[] = [], totalExtras: number = 0, notas: string = '') {
     setCart(prev => {
       const hasModifiers = modifiers.length > 0
+      // Aplicar descuento al precio antes de guardar en carrito
+      const descuentoPct = Number((product as any).descuento_pct || 0)
+      const productConPrecioFinal = descuentoPct > 0
+        ? { ...product, precio: Math.round(product.precio * (1 - descuentoPct / 100)) }
+        : product
       const existing = !hasModifiers ? prev.items.find(i => i.product.id === product.id && !i.modifiers?.length) : null
       const items = existing
         ? prev.items.map(i => i.product.id === product.id && !i.modifiers?.length ? { ...i, cantidad: i.cantidad + 1 } : i)
-        : [...prev.items, { product, cantidad: 1, modifiers, totalExtras, notas }]
+        : [...prev.items, { product: productConPrecioFinal, cantidad: 1, modifiers, totalExtras, notas }]
       const updated: Cart = { marca, items }
       localStorage.setItem('lovers_cart', JSON.stringify(updated))
       return updated
