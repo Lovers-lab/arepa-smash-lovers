@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Product, Category, CartItem, Marca } from '@/types'
 import type { SelectedModifier } from '@/types/modifiers'
 import ModifierModal from '@/components/menu/ModifierModal'
+import ProductPreviewModal from '@/components/menu/ProductPreviewModal'
 import { syncCartToCloud, loadCartFromCloud } from '@/lib/utils/cart'
 
 type Cart = { items: CartItem[]; marca: Marca }
@@ -41,6 +42,7 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true)
   const [brandColors, setBrandColors] = useState({ primary: '#C41E3A', secondary: '#E63946' })
   const [modifierProduct, setModifierProduct] = useState<Product | null>(null)
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
   const [addedFeedback, setAddedFeedback] = useState<string | null>(null)
   const [pushGranted, setPushGranted] = useState(false)
   const [installPrompt, setInstallPrompt] = useState<any>(null)
@@ -307,7 +309,8 @@ export default function MenuPage() {
 
                   return (
                     <div key={product.id}
-                      style={{ background:'white', borderRadius:'20px', border:'1px solid #E8EAED', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 2px 8px rgba(0,0,0,0.04)', transition:'transform 0.2s, box-shadow 0.2s' }}>
+                      onClick={() => setPreviewProduct(product)}
+                      style={{ background:'white', borderRadius:'20px', border:'1px solid #E8EAED', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 2px 8px rgba(0,0,0,0.04)', transition:'transform 0.15s, box-shadow 0.15s', cursor:'pointer', WebkitTapHighlightColor:'transparent' }}>
 
                       {/* Image */}
                       <div style={{ position:'relative', height:'120px', background:'linear-gradient(135deg, #FEF3C7, #FDE68A)', overflow:'hidden' }}>
@@ -394,6 +397,22 @@ export default function MenuPage() {
 
       {/* MODIFIER MODAL */}
       {modifierProduct && (
+        {/* PRODUCT PREVIEW MODAL */}
+        {previewProduct && (
+          <ProductPreviewModal
+            product={previewProduct}
+            brandColor={brandColors.primary}
+            marca={marca}
+            inCartQty={cart.items.find(i => i.product.id === previewProduct.id)?.cantidad || 0}
+            onClose={() => setPreviewProduct(null)}
+            onAddToCart={() => {
+              setPreviewProduct(null)
+              setModifierProduct(previewProduct)
+            }}
+            onRemoveFromCart={() => removeFromCart(previewProduct.id)}
+          />
+        )}
+
         <ModifierModal product={modifierProduct} brandColor={brandColors.primary}
           onConfirm={(modifiers, totalExtras, notas) => { addToCart(modifierProduct, modifiers, totalExtras, notas || ''); setModifierProduct(null) }}
           onClose={() => setModifierProduct(null)} />
