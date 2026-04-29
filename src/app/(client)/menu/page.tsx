@@ -396,24 +396,24 @@ export default function MenuPage() {
         </div>
       )}
 
+      {/* PRODUCT PREVIEW MODAL */}
+      {previewProduct && (
+        <ProductPreviewModal
+          product={previewProduct}
+          brandColor={brandColors.primary}
+          marca={marca}
+          inCartQty={cart.items.find(i => i.product.id === previewProduct.id)?.cantidad || 0}
+          onClose={() => setPreviewProduct(null)}
+          onAddToCart={() => {
+            setPreviewProduct(null)
+            setModifierProduct(previewProduct)
+          }}
+          onRemoveFromCart={() => removeFromCart(previewProduct.id)}
+        />
+      )}
+
       {/* MODIFIER MODAL */}
       {modifierProduct && (
-        {/* PRODUCT PREVIEW MODAL */}
-        {previewProduct && (
-          <ProductPreviewModal
-            product={previewProduct}
-            brandColor={brandColors.primary}
-            marca={marca}
-            inCartQty={cart.items.find(i => i.product.id === previewProduct.id)?.cantidad || 0}
-            onClose={() => setPreviewProduct(null)}
-            onAddToCart={() => {
-              setPreviewProduct(null)
-              setModifierProduct(previewProduct)
-            }}
-            onRemoveFromCart={() => removeFromCart(previewProduct.id)}
-          />
-        )}
-
         <ModifierModal product={modifierProduct} brandColor={brandColors.primary}
           onConfirm={(modifiers, totalExtras, notas) => { addToCart(modifierProduct, modifiers, totalExtras, notas || ''); setModifierProduct(null) }}
           onClose={() => setModifierProduct(null)} />
