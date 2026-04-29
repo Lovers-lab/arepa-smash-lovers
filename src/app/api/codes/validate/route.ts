@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       valid: true, type: 'INFLUENCER', code: influencer.codigo,
       discount_pct: 15, discount_fijo: 0, tipo: 'porcentaje', valor: 15,
       minimo_compra: 0,
-      label: \`\${influencer.nombre_influencer} — 15% OFF primera compra\`,
+      label: influencer.nombre_influencer + ' — 15% OFF primera compra',
     })
   }
 
