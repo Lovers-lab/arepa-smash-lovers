@@ -196,7 +196,7 @@ export default function AdminDashboard() {
       if (user?.whatsapp) {
         const phone = user.whatsapp.replace(/\D/g, '')
         const msg = encodeURIComponent(`Hola ${user.nombre} 👋, recibimos tu pedido *#${(order as any).numero_pedido}* y estamos verificando el pago. Te avisamos cuando esté en cocina 🍽️`)
-        window.open(\`https://wa.me/\${phone}?text=\${msg}\`, '_blank')
+        window.open('https://wa.me/' + phone + '?text=' + msg, '_blank')
       }
     }
     if (nextEstado === 'ENTREGADO') {
