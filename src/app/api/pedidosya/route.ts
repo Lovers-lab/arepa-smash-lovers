@@ -94,7 +94,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ test: true, ok, estimate: result })
     }
 
+    console.log('PedidosYa response:', JSON.stringify(result))
     if (!ok) {
+      console.error('PedidosYa error:', JSON.stringify(result))
       return NextResponse.json({ error: 'Error en PedidosYa', details: result }, { status: 500 })
     }
 
