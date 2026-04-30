@@ -32,7 +32,21 @@ export async function POST(request: NextRequest) {
     if (!Array.isArray(orders) || orders.length === 0) return NextResponse.json({ ok: true })
     const order = orders[0]
     const updateData: any = { pedidosya_estado: eventCode, estado: nuevoEstado }
-    if (eventCode === 'COMPLETED') updateData.hora_entregado = new Date().toISOString()
+    if (eventCode === 'COMPLETED') {
+      updateData.hora_entregado = new Date().toISOString()
+      // Obtener comprobante de entrega (foto del repartidor)
+      try {
+        const proofRes = await fetch('https://courier-api.pedidosya.com/v3/shippings/' + shippingId + '/proof-of-delivery', {
+          headers: { 'Authorization': process.env.PEDIDOSYA_API_TOKEN || '' },
+        })
+        if (proofRes.ok) {
+          const proof = await proofRes.json()
+          const photoUrl = proof?.photoUrl || proof?.photo_url || proof?.url || null
+          if (photoUrl) updateData.comprobante_url = photoUrl
+          console.log('Comprobante:', JSON.stringify(proof))
+        }
+      } catch (e: any) { console.error('Comprobante error:', e.message) }
+    }
     await fetch(SUPA_URL + '/rest/v1/orders?id=eq.' + order.id, {
       method: 'PATCH',
       headers: {
