@@ -1,48 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
 
-function generateOTP(): string {
-  return Math.floor(1000 + Math.random() * 9000).toString()
-}
-
-async function sendOTP(phone: string, code: string): Promise<boolean> {
-  const sid = process.env.TWILIO_ACCOUNT_SID
-  const token = process.env.TWILIO_AUTH_TOKEN
-  const from = process.env.TWILIO_WHATSAPP_FROM
-
-  if (!sid || !token || !from) {
-    console.error('Twilio no configurado - faltan variables')
-    return false
-  }
-
-  const digits = phone.replace(/\D/g, '')
-  const e164 = digits.startsWith('1') ? '+' + digits : '+1' + digits
-  const message = 'Tu codigo de verificacion para Arepa & Smash Lovers es: ' + code + '. Valido por 10 minutos. No lo compartas.'
-
-  try {
-    const res = await fetch(
-      'https://api.twilio.com/2010-04-01/Accounts/' + sid + '/Messages.json',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: 'Basic ' + Buffer.from(sid + ':' + token).toString('base64'),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          From: from,
-          To: 'whatsapp:' + e164,
-          Body: message,
-        }).toString(),
-      }
-    )
-    const data = await res.json()
-    console.log('Twilio response:', JSON.stringify(data))
-    return res.ok && !!data.sid
-  } catch (err: any) {
-    console.error('Twilio error:', err.message)
-    return false
-  }
-}
+const VERIFY_SID = 'VAee20c1a92ff273af4ab47149884170da'
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,24 +10,28 @@ export async function POST(request: NextRequest) {
     const digits = whatsapp.replace(/\D/g, '')
     if (digits.length !== 10) return NextResponse.json({ error: 'Numero invalido' }, { status: 400 })
 
-    const supabase = createAdminClient()
+    const sid = process.env.TWILIO_ACCOUNT_SID
+    const token = process.env.TWILIO_AUTH_TOKEN
+    if (!sid || !token) return NextResponse.json({ error: 'Config faltante' }, { status: 500 })
 
-    await supabase.from('otp_codes').update({ used: true }).eq('whatsapp', digits).eq('used', false)
+    const e164 = '+1' + digits
 
-    const code = generateOTP()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString()
+    const res = await fetch(
+      'https://verify.twilio.com/v2/Services/' + VERIFY_SID + '/Verifications',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + Buffer.from(sid + ':' + token).toString('base64'),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ To: e164, Channel: 'sms' }).toString(),
+      }
+    )
 
-    const { error } = await supabase.from('otp_codes').insert({
-      whatsapp: digits,
-      code,
-      expires_at: expiresAt,
-      used: false,
-    })
+    const data = await res.json()
+    console.log('Verify send:', JSON.stringify(data))
 
-    if (error) throw error
-
-    const sent = await sendOTP(digits, code)
-    if (!sent) return NextResponse.json({ error: 'Error enviando el codigo. Intenta de nuevo.' }, { status: 500 })
+    if (!res.ok) return NextResponse.json({ error: data.message || 'Error enviando codigo' }, { status: 500 })
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
