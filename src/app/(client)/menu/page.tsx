@@ -191,8 +191,9 @@ export default function MenuPage() {
   }
 
   async function loadLoyalty(userId: string) {
-    const { data } = await supabase.from('loyalty_balances').select('saldo').eq('user_id', userId).single()
-    if (data) setLoyaltySaldo(Number(data.saldo))
+    const res = await fetch('/api/loyalty/balance?userId=' + userId, { cache: 'no-store' })
+    const data = await res.json()
+    if (data?.saldo !== undefined) setLoyaltySaldo(Number(data.saldo))
   }
 
   // Refrescar puntos cuando el usuario vuelve a la pantalla
