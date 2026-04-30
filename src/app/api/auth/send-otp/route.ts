@@ -10,9 +10,10 @@ async function sendWhatsAppOTP(phone: string, code: string): Promise<boolean> {
   const token = process.env.TWILIO_AUTH_TOKEN
   const from = process.env.TWILIO_WHATSAPP_FROM
 
+  console.log('Twilio config:', { sid: !!sid, token: !!token, from: from || 'MISSING' })
   if (!sid || !token || !from) {
-    console.warn('Twilio no configurado — OTP:', code)
-    return true // en desarrollo retorna true para poder probar
+    console.error('Twilio no configurado - variables faltantes')
+    return false
   }
 
   const digits = phone.replace(/\D/g, '')
