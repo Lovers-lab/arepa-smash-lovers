@@ -21,7 +21,8 @@ const FLUJO: Record<string, { label: string; next: string; nextLabel: string; co
   EN_COCINA:        { label: 'En cocina',  next: 'LISTO',     nextLabel: 'Marcar listo',    color: '#D97706', bg: '#FFFBEB', dot: '#D97706' },
   LISTO:            { label: 'Listo',      next: 'EN_CAMINO', nextLabel: 'Despachar',       color: '#0284C7', bg: '#F0F9FF', dot: '#0284C7' },
   EN_CAMINO:        { label: 'En camino',  next: 'ENTREGADO', nextLabel: 'Entregado',       color: '#059669', bg: '#ECFDF5', dot: '#059669' },
-  ENVIO_SOLICITADO: { label: 'Repartidor', next: 'EN_CAMINO', nextLabel: 'En camino',       color: '#6366F1', bg: '#EEF2FF', dot: '#6366F1' },
+  ENVIO_SOLICITADO:  { label: 'Repartidor', next: 'EN_CAMINO', nextLabel: 'En camino',       color: '#6366F1', bg: '#EEF2FF', dot: '#6366F1' },
+  CANCELADO_EN_RUTA: { label: 'Cancelado en ruta', next: '', nextLabel: '', color: '#DC2626', bg: '#FEF2F2', dot: '#DC2626' },
 }
 
 const WA_TEMPLATES = [
@@ -86,6 +87,7 @@ export default function AdminDashboard() {
   const [newIds, setNewIds] = useState<Set<string>>(new Set())
   const [sound, setSound] = useState(true)
   const [selected, setSelected] = useState<Order | null>(null)
+  const [alertas, setAlertas] = useState<{id: string, tipo: 'ENTREGADO'|'CANCELADO_EN_RUTA', numero: number}[]>([])
   const [tab, setTab] = useState<'activos' | 'historial'>('activos')
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [alertIds, setAlertIds] = useState<Set<string>>(new Set())
@@ -128,6 +130,10 @@ export default function AdminDashboard() {
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, ({ new: u }) => {
         const updated = u as any
+        // Alertas para ENTREGADO y CANCELADO_EN_RUTA
+        if (updated.estado === 'ENTREGADO' || updated.estado === 'CANCELADO_EN_RUTA') {
+          setAlertas(prev => [...prev, { id: updated.id, tipo: updated.estado as any, numero: updated.numero_pedido }])
+        }
         if (['ENTREGADO', 'CANCELADO'].includes(updated.estado)) {
           setOrders(p => p.filter(o => o.id !== updated.id))
           stopAlertLoop(updated.id)
@@ -170,6 +176,27 @@ export default function AdminDashboard() {
       entregados: data.filter(o => o.estado === 'ENTREGADO').length,
     })
   }
+
+  // Alertas visuales de entregado/cancelado en ruta
+  useEffect(() => {
+    if (alertas.length === 0) return
+    const timer = setTimeout(() => setAlertas([]), 10000)
+    return () => clearTimeout(timer)
+  }, [alertas])
+
+  // Limpiar dashboard a medianoche
+  useEffect(() => {
+    const checkMidnight = () => {
+      const now = new Date()
+      if (now.getHours() === 0 && now.getMinutes() === 0) {
+        setOrders([])
+        setStats({ pedidos: 0, ingresos: 0, clientes: 0, entregados: 0 })
+        setAlertas([])
+      }
+    }
+    const interval = setInterval(checkMidnight, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   async function loadHistorial() {
     const { data } = await supabase.from('orders')
@@ -235,7 +262,8 @@ export default function AdminDashboard() {
 
   const active = orders.filter(o => !['ENTREGADO', 'CANCELADO'].includes((o as any).estado))
   const pendientes = active.filter(o => ['PENDIENTE', 'PAGADO'].includes((o as any).estado))
-  const enProceso = active.filter(o => ['EN_COCINA', 'LISTO', 'EN_CAMINO', 'ENVIO_SOLICITADO'].includes((o as any).estado))
+  const enProceso = active.filter(o => ['EN_COCINA', 'LISTO'].includes((o as any).estado))
+  const enRuta = active.filter(o => ['ENVIO_SOLICITADO', 'EN_CAMINO'].includes((o as any).estado))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#F8F8F8', fontFamily: "'Inter', -apple-system, sans-serif" }}>
@@ -253,6 +281,8 @@ export default function AdminDashboard() {
         .mbtn:hover{filter:brightness(0.93)}
         .mbtn:active{transform:scale(0.97)}
         .alert-pulse{animation:pulseRed 1.5s infinite}
+        @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+        .alerta-card{animation:slideDown 0.4s ease}
       `}</style>
 
       {/* STATS HEADER */}
