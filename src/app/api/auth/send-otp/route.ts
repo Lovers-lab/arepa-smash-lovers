@@ -8,7 +8,7 @@ function generateOTP(): string {
 async function sendWhatsAppOTP(phone: string, code: string): Promise<boolean> {
   const sid = process.env.TWILIO_ACCOUNT_SID
   const token = process.env.TWILIO_AUTH_TOKEN
-  const from = process.env.TWILIO_WHATSAPP_NUMBER
+  const from = process.env.TWILIO_WHATSAPP_FROM
 
   if (!sid || !token || !from) {
     console.warn('Twilio no configurado — OTP:', code)
