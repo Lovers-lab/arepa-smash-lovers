@@ -118,9 +118,10 @@ export default function LoginPage() {
         body: JSON.stringify({ whatsapp: digits, code }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Código incorrecto'); setLoading(false); return }
+      if (!res.ok || !data.valid) { setError(data.error || 'Código incorrecto'); setLoading(false); return }
       if (data.isNewUser) { setStep('name') }
-      else { localStorage.setItem('lovers_user', JSON.stringify(data.user)); router.push('/') }
+      else if (data.user) { localStorage.setItem('lovers_user', JSON.stringify(data.user)); router.push('/') }
+      else { setError('Error al iniciar sesión. Intenta de nuevo.'); setLoading(false) }
     } catch { setError('Error de conexión.') }
     finally { setLoading(false) }
   }
