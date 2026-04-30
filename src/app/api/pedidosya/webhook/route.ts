@@ -43,6 +43,34 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify(updateData),
     })
+    // Cuando el repartidor toma la orden, enviar tracking URL al cliente por WA
+    if (eventCode === 'PICKED_UP' || eventCode === 'NEAR_PICKUP') {
+      const orderRes = await fetch(SUPA_URL + '/rest/v1/orders?id=eq.' + order.id + '&select=pedidosya_tracking_url,numero_pedido,user:users(nombre,whatsapp)', {
+        headers: { 'apikey': SUPA_KEY!, 'Authorization': 'Bearer ' + SUPA_KEY },
+        cache: 'no-store',
+      })
+      const orderData = await orderRes.json()
+      const ord = Array.isArray(orderData) ? orderData[0] : null
+      const trackingUrl = ord?.pedidosya_tracking_url
+      const user = ord?.user
+      if (trackingUrl && user?.whatsapp) {
+        const phone = user.whatsapp.replace(/\D/g, '')
+        const msg = encodeURIComponent('Hola ' + (user.nombre || '') + ' 🛵 Tu pedido #' + ord.numero_pedido + ' ya esta en camino! Sigue a tu repartidor aqui: ' + trackingUrl)
+        await fetch('https://api.twilio.com/2010-04-01/Accounts/' + process.env.TWILIO_ACCOUNT_SID + '/Messages.json', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + Buffer.from(process.env.TWILIO_ACCOUNT_SID + ':' + process.env.TWILIO_AUTH_TOKEN).toString('base64'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            From: 'whatsapp:' + process.env.TWILIO_WHATSAPP_FROM,
+            To: 'whatsapp:+1' + phone,
+            Body: msg,
+          }).toString(),
+        }).catch(err => console.error('Twilio error:', err))
+      }
+    }
+
     console.log('Pedido actualizado:', order.numero_pedido, nuevoEstado)
     return NextResponse.json({ ok: true, updated: order.numero_pedido, estado: nuevoEstado })
   } catch (err: any) {
