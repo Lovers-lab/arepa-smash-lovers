@@ -39,12 +39,12 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient()
     const { data: existing } = await supabase
       .from('users')
-      .select('id, nombre, activo')
+      .select('id, nombre, whatsapp, activo, cliente_vip, total_gastado, total_compras, dentro_zona, fecha_registro')
       .eq('whatsapp', digits)
       .maybeSingle()
 
     if (existing) {
-      return NextResponse.json({ valid: true, userId: existing.id, isNewUser: false, nombre: existing.nombre, user: { id: existing.id, nombre: existing.nombre, whatsapp: digits } })
+      return NextResponse.json({ valid: true, userId: existing.id, isNewUser: false, nombre: existing.nombre, user: existing })
     }
 
     const { data: newUser } = await supabase
