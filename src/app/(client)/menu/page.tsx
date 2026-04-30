@@ -192,8 +192,21 @@ export default function MenuPage() {
 
   async function loadLoyalty(userId: string) {
     const { data } = await supabase.from('loyalty_balances').select('saldo').eq('user_id', userId).single()
-    if (data) setLoyaltySaldo(data.saldo)
+    if (data) setLoyaltySaldo(Number(data.saldo))
   }
+
+  // Refrescar puntos cuando el usuario vuelve a la pantalla
+  useEffect(() => {
+    const stored = localStorage.getItem('lovers_user')
+    if (!stored) return
+    const u = JSON.parse(stored)
+    const onFocus = () => loadLoyalty(u.id)
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) loadLoyalty(u.id)
+    })
+    return () => window.removeEventListener('focus', onFocus)
+  }, [])
 
   function scrollToCategory(catId: string) {
     const el = sectionRefs.current[catId]
