@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (existing) {
-      return NextResponse.json({ valid: true, userId: existing.id, isNew: false, nombre: existing.nombre })
+      return NextResponse.json({ valid: true, userId: existing.id, isNewUser: false, nombre: existing.nombre, user: { id: existing.id, nombre: existing.nombre, whatsapp: digits } })
     }
 
     const { data: newUser } = await supabase
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       .select('id')
       .single()
 
-    return NextResponse.json({ valid: true, userId: newUser?.id, isNew: true })
+    return NextResponse.json({ valid: true, userId: newUser?.id, isNewUser: true, user: { id: newUser?.id, whatsapp: digits } })
   } catch (err: any) {
     console.error('VerifyCheck error:', err.message)
     return NextResponse.json({ valid: false, error: err.message }, { status: 500 })
