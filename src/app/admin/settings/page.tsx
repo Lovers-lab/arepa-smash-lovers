@@ -13,10 +13,30 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [loyaltyConfig, setLoyaltyConfig] = useState({ pesos_por_punto: 10, valor_punto: 1 })
+  const [savingLoyalty, setSavingLoyalty] = useState(false)
+  const [savedLoyalty, setSavedLoyalty] = useState(false)
   const [settings, setSettings] = useState<any>(null)
   const brandColor = marca === 'AREPA' ? '#C41E3A' : '#0052CC'
 
   useEffect(() => { loadSettings(marca) }, [marca])
+
+  useEffect(() => {
+    fetch('/api/loyalty/config')
+      .then(r => r.json())
+      .then(d => setLoyaltyConfig({ pesos_por_punto: d.pesos_por_punto || 10, valor_punto: d.valor_punto || 1 }))
+  }, [])
+
+  async function saveLoyaltyConfig() {
+    setSavingLoyalty(true)
+    const res = await fetch('/api/loyalty/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loyaltyConfig),
+    })
+    if (res.ok) { setSavedLoyalty(true); setTimeout(() => setSavedLoyalty(false), 2000) }
+    setSavingLoyalty(false)
+  }
 
   async function loadSettings(m: Marca) {
     setLoading(true)
@@ -227,6 +247,43 @@ export default function AdminSettingsPage() {
             </>
           )}
         </Section>
+        {/* PUNTOS LOVERS */}
+        <Section title="⭐ Puntos Lovers">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">Configura cuántos pesos gasta el cliente para ganar 1 punto, y cuánto vale cada punto en descuento.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-600">RD$ por punto</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">RD$</span>
+                  <input type="number" min={1} value={loyaltyConfig.pesos_por_punto}
+                    onChange={e => setLoyaltyConfig(p => ({ ...p, pesos_por_punto: parseInt(e.target.value) || 10 }))}
+                    className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors" />
+                  <span className="text-sm text-gray-500">= 1 pto</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-600">Valor del punto</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">1 pto =</span>
+                  <input type="number" min={1} value={loyaltyConfig.valor_punto}
+                    onChange={e => setLoyaltyConfig(p => ({ ...p, valor_punto: parseFloat(e.target.value) || 1 }))}
+                    className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors" />
+                  <span className="text-sm text-gray-500">RD$</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 bg-purple-50 rounded-xl text-sm text-purple-700 font-medium">
+              💡 Con esta configuración: por cada RD${loyaltyConfig.pesos_por_punto} gastados el cliente gana 1 punto = RD${loyaltyConfig.valor_punto} de descuento
+            </div>
+            <button onClick={saveLoyaltyConfig} disabled={savingLoyalty}
+              className="px-5 py-2 rounded-xl text-white font-bold text-sm disabled:opacity-50 transition-all"
+              style={{ background: savedLoyalty ? '#10B981' : brandColor }}>
+              {savingLoyalty ? 'Guardando...' : savedLoyalty ? '✓ Guardado' : 'Guardar configuración de puntos'}
+            </button>
+          </div>
+        </Section>
+
       </main>
     </div>
   )
