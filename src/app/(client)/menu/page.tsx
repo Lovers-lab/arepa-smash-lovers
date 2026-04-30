@@ -191,22 +191,30 @@ export default function MenuPage() {
   }
 
   async function loadLoyalty(userId: string) {
-    const res = await fetch('/api/loyalty/balance?userId=' + userId, { cache: 'no-store' })
-    const data = await res.json()
+    const { data } = await supabase
+      .from('loyalty_balances')
+      .select('saldo')
+      .eq('user_id', userId)
+      .single()
     if (data?.saldo !== undefined) setLoyaltySaldo(Number(data.saldo))
   }
 
-  // Refrescar puntos cuando el usuario vuelve a la pantalla
+  // Escuchar cambios en tiempo real en loyalty_balances
   useEffect(() => {
     const stored = localStorage.getItem('lovers_user')
     if (!stored) return
     const u = JSON.parse(stored)
-    const onFocus = () => loadLoyalty(u.id)
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) loadLoyalty(u.id)
-    })
-    return () => window.removeEventListener('focus', onFocus)
+    const ch = supabase.channel('loyalty_' + u.id)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'loyalty_balances',
+        filter: 'user_id=eq.' + u.id,
+      }, (payload: any) => {
+        if (payload.new?.saldo !== undefined) setLoyaltySaldo(Number(payload.new.saldo))
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
   }, [])
 
   function scrollToCategory(catId: string) {
