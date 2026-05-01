@@ -209,22 +209,7 @@ export default function MenuPage() {
   // Escuchar cambios en tiempo real en loyalty_balances
 
 
-  useEffect(() => {
-    const stored = localStorage.getItem('lovers_user')
-    if (!stored) return
-    const u = JSON.parse(stored)
-    const ch = supabase.channel('loyalty_' + u.id)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'loyalty_balances',
-        filter: 'user_id=eq.' + u.id,
-      }, (payload: any) => {
-        if (payload.new?.saldo !== undefined) setLoyaltySaldo(Number(payload.new.saldo))
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [])
+
 
   function scrollToCategory(catId: string) {
     const el = sectionRefs.current[catId]
