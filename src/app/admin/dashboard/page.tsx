@@ -202,7 +202,7 @@ export default function AdminDashboard() {
   async function loadHistorial() {
     const { data } = await supabase.from('orders')
       .select('*, user:users(nombre,whatsapp), items:order_items(*, product:products(nombre))')
-      .in('estado', ['ENTREGADO', 'CANCELADO'])
+      .in('estado', ['ENTREGADO', 'CANCELADO', 'CANCELADO_EN_RUTA', 'EXPIRADO'])
       .order('fecha_orden', { ascending: false }).limit(40)
     if (data) setHistorial(data as Order[])
   }
@@ -263,6 +263,7 @@ export default function AdminDashboard() {
 
   const active = orders.filter(o => !['ENTREGADO', 'CANCELADO', 'EXPIRADO'].includes((o as any).estado))
   const expiradas = orders.filter(o => (o as any).estado === 'EXPIRADO')
+  const [historialTab, setHistorialTab] = useState<'entregadas'|'canceladas'|'expiradas'>('entregadas')
   const pendientes = active.filter(o => ['PENDIENTE', 'PAGADO'].includes((o as any).estado))
   const enProceso = active.filter(o => ['EN_COCINA', 'LISTO'].includes((o as any).estado))
   const enRuta = active.filter(o => ['ENVIO_SOLICITADO', 'EN_CAMINO'].includes((o as any).estado))
@@ -377,23 +378,62 @@ export default function AdminDashboard() {
           )}
 
           {tab === 'historial' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {historial.map(order => {
-                const estado = (order as any).estado
-                return (
-                  <div key={order.id} onClick={() => setSelected(selected?.id === order.id ? null : order)} className="ocard"
-                    style={{ background: 'white', border: `1px solid ${selected?.id === order.id ? '#111' : '#EBEBEB'}`, borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: estado === 'ENTREGADO' ? '#059669' : '#EF4444', flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <span style={{ fontWeight: 700, fontSize: 14 }}>#{(order as any).numero_pedido}</span>
-                      <span style={{ color: '#6B7280', fontSize: 13, marginLeft: 8 }}>{(order as any).user?.nombre}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Sub-tabs historial */}
+              <div style={{ display: 'flex', gap: 6, padding: '0 4px' }}>
+                {[
+                  { id: 'entregadas', label: '✅ Entregadas', color: '#059669', bg: '#ECFDF5' },
+                  { id: 'canceladas', label: '❌ Canceladas', color: '#DC2626', bg: '#FEF2F2' },
+                  { id: 'expiradas',  label: '⌛ Expiradas',  color: '#D97706', bg: '#FEF3C7' },
+                ].map(t => (
+                  <button key={t.id} onClick={() => setHistorialTab(t.id as any)}
+                    style={{ padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                      background: historialTab === t.id ? t.bg : '#F3F4F6',
+                      color: historialTab === t.id ? t.color : '#6B7280' }}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Lista filtrada */}
+              {historial
+                .filter((o: any) => {
+                  if (historialTab === 'entregadas') return o.estado === 'ENTREGADO'
+                  if (historialTab === 'canceladas') return ['CANCELADO', 'CANCELADO_EN_RUTA'].includes(o.estado)
+                  if (historialTab === 'expiradas')  return o.estado === 'EXPIRADO'
+                  return true
+                })
+                .map(order => {
+                  const estado = (order as any).estado
+                  const dotColor = estado === 'ENTREGADO' ? '#059669' : estado === 'EXPIRADO' ? '#D97706' : '#DC2626'
+                  const badgeBg = estado === 'ENTREGADO' ? '#ECFDF5' : estado === 'EXPIRADO' ? '#FEF3C7' : '#FEF2F2'
+                  const badgeColor = estado === 'ENTREGADO' ? '#059669' : estado === 'EXPIRADO' ? '#D97706' : '#DC2626'
+                  const label = estado === 'ENTREGADO' ? 'Entregado' : estado === 'EXPIRADO' ? 'Expirado' : estado === 'CANCELADO_EN_RUTA' ? 'Cancelado en ruta' : 'Cancelado'
+                  return (
+                    <div key={(order as any).id} onClick={() => setSelected(selected?.id === (order as any).id ? null : order)} className="ocard"
+                      style={{ background: 'white', border: `1px solid ${selected?.id === (order as any).id ? '#111' : '#EBEBEB'}`, borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontWeight: 700, fontSize: 14 }}>#{(order as any).numero_pedido}</span>
+                        <span style={{ color: '#6B7280', fontSize: 13, marginLeft: 8 }}>{(order as any).user?.nombre}</span>
+                      </div>
+                      <span style={{ fontSize: 12, color: '#9CA3AF' }}>{timeAgo((order as any).fecha_orden)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>{formatRD(order.total_pagado)}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 999, background: badgeBg, color: badgeColor }}>{label}</span>
                     </div>
-                    <span style={{ fontSize: 12, color: '#9CA3AF' }}>{timeAgo((order as any).fecha_orden)}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>{formatRD(order.total_pagado)}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 999, background: estado === 'ENTREGADO' ? '#ECFDF5' : '#FEF2F2', color: estado === 'ENTREGADO' ? '#059669' : '#DC2626' }}>{estado}</span>
-                  </div>
-                )
-              })}
+                  )
+                })}
+
+              {historial.filter((o: any) => {
+                if (historialTab === 'entregadas') return o.estado === 'ENTREGADO'
+                if (historialTab === 'canceladas') return ['CANCELADO', 'CANCELADO_EN_RUTA'].includes(o.estado)
+                if (historialTab === 'expiradas')  return o.estado === 'EXPIRADO'
+                return false
+              }).length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#9CA3AF', fontSize: 13 }}>
+                  Sin órdenes {historialTab === 'entregadas' ? 'entregadas' : historialTab === 'canceladas' ? 'canceladas' : 'expiradas'} hoy
+                </div>
+              )}
             </div>
           )}
         </div>
