@@ -60,7 +60,7 @@ export default function OrderTrackingPage() {
     // Calcular tiempo real sin depender de timer pausable
     const getRestante = () => {
       const fechaOrden = new Date((order as any)?.fecha_orden || Date.now()).getTime()
-      const expira = fechaOrden + 15 * 60 * 1000
+      const expira = fechaOrden + 10 * 60 * 1000
       return Math.max(0, Math.floor((expira - Date.now()) / 1000))
     }
     const inicial = getRestante()
@@ -87,7 +87,7 @@ export default function OrderTrackingPage() {
       }
     }, 1000)
     return () => clearInterval(timer)
-  }, [mioUrl, pagoStatus])
+  }, [order, mioUrl, pagoStatus])
 
   function formatCountdown(secs: number) {
     const m = Math.floor(secs / 60).toString().padStart(2, '0')
