@@ -35,6 +35,7 @@ export default function OrderTrackingPage() {
   const [reviewSent, setReviewSent] = useState(false)
   const [tracking, setTracking] = useState<any>(null)
   const mioUrl = searchParams.get('mioUrl')
+  const [countdown, setCountdown] = useState<number | null>(null)
 
   useEffect(() => {
     if (pagoStatus === 'exitoso') {
@@ -51,6 +52,37 @@ export default function OrderTrackingPage() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [id])
+
+  // Countdown de 15 minutos para pago con tarjeta
+  useEffect(() => {
+    if (!mioUrl || pagoStatus) return
+    const checkExpiry = async () => {
+      if (!id) return
+      const res = await fetch('/api/orders/expire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: id }),
+      })
+      const data = await res.json()
+      if (data.expired) loadOrder()
+    }
+    checkExpiry()
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev === null) return 15 * 60
+        if (prev <= 1) { checkExpiry(); clearInterval(timer); return 0 }
+        return prev - 1
+      })
+    }, 1000)
+    setCountdown(15 * 60)
+    return () => clearInterval(timer)
+  }, [mioUrl, pagoStatus])
+
+  function formatCountdown(secs: number) {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0')
+    const s = (secs % 60).toString().padStart(2, '0')
+    return m + ':' + s
+  }
 
   async function loadTracking(orderId: string) {
     try {
@@ -103,6 +135,7 @@ export default function OrderTrackingPage() {
   const statusIdx = ESTADOS.findIndex(e => e.key === order.estado)
   const currentStatus = ESTADOS[Math.max(0, statusIdx)]
   const isCancelled = order.estado === 'CANCELADO'
+  const isExpired = order.estado === 'EXPIRADO'
   const isDelivered = order.estado === 'ENTREGADO'
   const isPending = order.estado === 'PENDIENTE'
 
@@ -153,7 +186,9 @@ export default function OrderTrackingPage() {
             <div style={{ fontSize: '52px', marginBottom: '12px', animation: 'bounce 1.5s ease-in-out infinite' }}>🍽️</div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: '#0D0F12', margin: '0 0 8px' }}>¡Tu orden llegó al restaurante!</h2>
             <p style={{ color: '#6B7280', fontSize: '13px', margin: '0 0 6px', lineHeight: 1.5 }}>Completa el pago para que el equipo empiece a preparar y enviarte tu pedido</p>
-            <p style={{ color: '#DC2626', fontSize: '12px', fontWeight: 700, margin: '0 0 20px' }}>⏰ Tienes 15 minutos antes de que tu orden expire</p>
+            <p style={{ color: '#DC2626', fontSize: '12px', fontWeight: 700, margin: '0 0 20px' }}>
+              ⏰ {countdown !== null ? 'Tu orden expira en ' + formatCountdown(countdown) : 'Tienes 15 minutos para completar el pago'}
+            </p>
             <a href={mioUrl}
               style={{ display: 'block', width: '100%', padding: '18px', borderRadius: '16px', border: 'none', background: brandColor, color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(0,0,0,0.2)' }}>
               💳 Completar pago — {order ? formatRD(order.total_pagado) : ''}
@@ -193,6 +228,16 @@ export default function OrderTrackingPage() {
             <div style={{ fontSize: '48px', marginBottom: '12px', animation: 'pulse 1.5s ease-in-out infinite' }}>⏳</div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: '#92400E', margin: '0 0 8px' }}>Esperando aprobación</h2>
             <p style={{ color: '#B45309', fontSize: '13px', margin: 0 }}>Estamos verificando tu comprobante. Te notificamos por WhatsApp.</p>
+          </div>
+        ) : isExpired ? (
+          <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '20px', padding: '24px', textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>⌛</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: '#92400E', margin: '0 0 8px' }}>Orden expirada</h2>
+            <p style={{ color: '#B45309', fontSize: '13px', margin: '0 0 16px' }}>El tiempo para completar el pago ha vencido. Puedes hacer un nuevo pedido.</p>
+            <button onClick={() => router.push('/menu')}
+              style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: '#D97706', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>
+              🛒 Hacer nuevo pedido
+            </button>
           </div>
         ) : (
           <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '20px', padding: '24px', textAlign: 'center' }}>

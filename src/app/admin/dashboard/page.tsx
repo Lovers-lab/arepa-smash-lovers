@@ -23,6 +23,7 @@ const FLUJO: Record<string, { label: string; next: string; nextLabel: string; co
   EN_CAMINO:        { label: 'En camino',  next: 'ENTREGADO', nextLabel: 'Entregado',       color: '#059669', bg: '#ECFDF5', dot: '#059669' },
   ENVIO_SOLICITADO:  { label: 'Repartidor', next: 'EN_CAMINO', nextLabel: 'En camino',       color: '#6366F1', bg: '#EEF2FF', dot: '#6366F1' },
   CANCELADO_EN_RUTA: { label: 'Cancelado en ruta', next: '', nextLabel: '', color: '#DC2626', bg: '#FEF2F2', dot: '#DC2626' },
+  EXPIRADO:          { label: 'Expirado',          next: '', nextLabel: '', color: '#D97706', bg: '#FEF3C7', dot: '#D97706' },
 }
 
 const WA_TEMPLATES = [
@@ -160,7 +161,7 @@ export default function AdminDashboard() {
   async function loadOrders() {
     const { data } = await supabase.from('orders')
       .select('*, user:users(nombre,whatsapp), items:order_items(*, product:products(nombre,precio), modifiers:order_item_modifiers(option_nombre,group_nombre,precio_extra))')
-      .in('estado', ['PENDIENTE', 'PAGADO', 'EN_COCINA', 'LISTO', 'ENVIO_SOLICITADO', 'EN_CAMINO'])
+      .in('estado', ['PENDIENTE', 'PAGADO', 'EN_COCINA', 'LISTO', 'ENVIO_SOLICITADO', 'EN_CAMINO', 'EXPIRADO'])
       .order('fecha_orden', { ascending: false }).limit(60)
     if (data) setOrders(data as Order[])
   }
@@ -260,7 +261,8 @@ export default function AdminDashboard() {
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(template.msg(order))}`, '_blank')
   }
 
-  const active = orders.filter(o => !['ENTREGADO', 'CANCELADO'].includes((o as any).estado))
+  const active = orders.filter(o => !['ENTREGADO', 'CANCELADO', 'EXPIRADO'].includes((o as any).estado))
+  const expiradas = orders.filter(o => (o as any).estado === 'EXPIRADO')
   const pendientes = active.filter(o => ['PENDIENTE', 'PAGADO'].includes((o as any).estado))
   const enProceso = active.filter(o => ['EN_COCINA', 'LISTO'].includes((o as any).estado))
   const enRuta = active.filter(o => ['ENVIO_SOLICITADO', 'EN_CAMINO'].includes((o as any).estado))
