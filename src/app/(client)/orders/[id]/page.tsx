@@ -149,15 +149,16 @@ export default function OrderTrackingPage() {
 
         {/* Boton de pago MIO */}
         {mioUrl && !pagoStatus && (
-          <div style={{ background: 'white', border: '2px solid ' + brandColor, borderRadius: '20px', padding: '24px', textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>💳</div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: '#0D0F12', margin: '0 0 8px' }}>Tu pedido está listo</h2>
-            <p style={{ color: '#6B7280', fontSize: '13px', margin: '0 0 20px' }}>Completa el pago para que podamos preparar tu orden</p>
+          <div style={{ background: 'white', border: '2px solid ' + brandColor, borderRadius: '20px', padding: '24px', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+            <div style={{ fontSize: '52px', marginBottom: '12px', animation: 'bounce 1.5s ease-in-out infinite' }}>🍽️</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: '#0D0F12', margin: '0 0 8px' }}>¡Tu orden llegó al restaurante!</h2>
+            <p style={{ color: '#6B7280', fontSize: '13px', margin: '0 0 6px', lineHeight: 1.5 }}>Completa el pago para que el equipo empiece a preparar y enviarte tu pedido</p>
+            <p style={{ color: '#DC2626', fontSize: '12px', fontWeight: 700, margin: '0 0 20px' }}>⏰ Tienes 15 minutos antes de que tu orden expire</p>
             <a href={mioUrl}
-              style={{ display: 'block', width: '100%', padding: '18px', borderRadius: '16px', border: 'none', background: brandColor, color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box' }}>
-              🔒 Pagar {order ? formatRD(order.total_pagado) : ''}
+              style={{ display: 'block', width: '100%', padding: '18px', borderRadius: '16px', border: 'none', background: brandColor, color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box', boxShadow: '0 6px 20px rgba(0,0,0,0.2)' }}>
+              💳 Completar pago — {order ? formatRD(order.total_pagado) : ''}
             </a>
-            <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '12px 0 0' }}>🔒 Pago seguro — cuando termines regresa aquí para ver tu status</p>
+            <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '12px 0 0' }}>🔒 Pago 100% seguro y encriptado</p>
           </div>
         )}
 
