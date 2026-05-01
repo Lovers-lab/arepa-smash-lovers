@@ -34,7 +34,9 @@ export default function OrderTrackingPage() {
   const [comment, setComment] = useState('')
   const [reviewSent, setReviewSent] = useState(false)
   const [tracking, setTracking] = useState<any>(null)
-  const mioUrl = searchParams.get('mioUrl')
+  const mioUrlParam = searchParams.get('mioUrl')
+  const [mioUrlFromDB, setMioUrlFromDB] = useState<string | null>(null)
+  const mioUrl = mioUrlParam || mioUrlFromDB
   const [countdown, setCountdown] = useState<number | null>(null)
 
   useEffect(() => {
@@ -109,6 +111,10 @@ export default function OrderTrackingPage() {
       .eq('id', id).single()
     setOrder(data as Order)
     setLoading(false)
+    // Si la orden tiene checkout URL y está PENDIENTE, mostrar botón de pago
+    if ((data as any)?.estado === 'PENDIENTE' && (data as any)?.mio_checkout_url) {
+      setMioUrlFromDB((data as any).mio_checkout_url)
+    }
     if ((data as any)?.estado === 'EN_CAMINO' && (data as any)?.pedidosya_shipping_id) {
       loadTracking(id)
     }
