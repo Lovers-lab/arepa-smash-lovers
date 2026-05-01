@@ -171,10 +171,10 @@ export default function AdminDashboard() {
     const { data } = await supabase.from('orders').select('total_pagado,user_id,estado').gte('fecha_orden', today).neq('estado', 'CANCELADO')
     if (!data) return
     setStats({
-      pedidos: data.length,
-      ingresos: data.reduce((a, o) => a + (o.total_pagado || 0), 0),
-      clientes: new Set(data.map(o => o.user_id)).size,
-      entregados: data.filter(o => o.estado === 'ENTREGADO').length,
+      pedidos: data.filter((o: any) => !['PENDIENTE','EXPIRADO','CANCELADO'].includes(o.estado)).length,
+      ingresos: data.filter((o: any) => !['PENDIENTE','EXPIRADO','CANCELADO'].includes(o.estado)).reduce((a: number, o: any) => a + (o.total_pagado || 0), 0),
+      clientes: new Set(data.filter((o: any) => !['PENDIENTE','EXPIRADO','CANCELADO'].includes(o.estado)).map((o: any) => o.user_id)).size,
+      entregados: data.filter((o: any) => o.estado === 'ENTREGADO').length,
     })
   }
 

@@ -57,16 +57,14 @@ export default function OrderTrackingPage() {
   useEffect(() => {
     if (!mioUrl || pagoStatus) return
     // Calcular tiempo restante basado en fecha de creacion de la orden
-    const calcularRestante = () => {
-      if (!order) return 15 * 60
-      const fechaOrden = new Date((order as any).fecha_orden).getTime()
+    // Calcular tiempo real sin depender de timer pausable
+    const getRestante = () => {
+      const fechaOrden = new Date((order as any)?.fecha_orden || Date.now()).getTime()
       const expira = fechaOrden + 15 * 60 * 1000
-      const restante = Math.max(0, Math.floor((expira - Date.now()) / 1000))
-      return restante
+      return Math.max(0, Math.floor((expira - Date.now()) / 1000))
     }
-    const inicial = calcularRestante()
+    const inicial = getRestante()
     if (inicial <= 0) {
-      // Ya expiró - marcar y recargar
       fetch('/api/orders/expire', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,20 +73,18 @@ export default function OrderTrackingPage() {
       return
     }
     setCountdown(inicial)
+    // Usar interval que recalcula desde fecha real - no se afecta por bloqueo de pantalla
     const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev === null || prev <= 1) {
-          clearInterval(timer)
-          // Expirar la orden y recargar
-          fetch('/api/orders/expire', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: id }),
-          }).then(() => loadOrder())
-          return 0
-        }
-        return prev - 1
-      })
+      const restante = getRestante()
+      setCountdown(restante)
+      if (restante <= 0) {
+        clearInterval(timer)
+        fetch('/api/orders/expire', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: id }),
+        }).then(() => loadOrder())
+      }
     }, 1000)
     return () => clearInterval(timer)
   }, [mioUrl, pagoStatus])
@@ -213,7 +209,7 @@ export default function OrderTrackingPage() {
         )}
 
         {/* Status card */}
-        {!isCancelled && !isPending ? (
+        {!isCancelled && !isPending && !isExpired ? (
           <div style={{ background: 'white', borderRadius: '20px', border: '1px solid #E4E6EA', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
               <div style={{ fontSize: '56px', marginBottom: '12px', animation: !isDelivered ? 'bounce 2s ease-in-out infinite' : 'none' }}>{currentStatus?.icon}</div>
