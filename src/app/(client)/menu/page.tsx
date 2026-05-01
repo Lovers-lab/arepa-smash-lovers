@@ -191,12 +191,19 @@ export default function MenuPage() {
   }
 
   async function loadLoyalty(userId: string) {
-    const { data } = await supabase
-      .from('loyalty_balances')
-      .select('saldo')
-      .eq('user_id', userId)
-      .single()
-    if (data?.saldo !== undefined) setLoyaltySaldo(Number(data.saldo))
+    // Fetch directo sin cache para siempre obtener el valor actualizado
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL + '/rest/v1/loyalty_balances?user_id=eq.' + userId + '&select=saldo'
+    const res = await fetch(url, {
+      headers: {
+        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+        'Authorization': 'Bearer ' + (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''),
+        'Cache-Control': 'no-cache, no-store',
+        'Pragma': 'no-cache',
+      },
+      cache: 'no-store',
+    })
+    const data = await res.json()
+    if (Array.isArray(data) && data[0]?.saldo !== undefined) setLoyaltySaldo(Number(data[0].saldo))
   }
 
   // Escuchar cambios en tiempo real en loyalty_balances
