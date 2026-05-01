@@ -34,17 +34,15 @@ export default function OrderTrackingPage() {
   const [comment, setComment] = useState('')
   const [reviewSent, setReviewSent] = useState(false)
   const [tracking, setTracking] = useState<any>(null)
+  const mioUrl = searchParams.get('mioUrl')
 
   useEffect(() => {
     if (pagoStatus === 'exitoso') {
-      fetch(`/api/mio?orderId=${id}`)
+      fetch('/api/mio?orderId=' + id)
         .then(r => r.json())
-        .then(() => {
-          localStorage.removeItem('lovers_cart')
-          setTimeout(() => router.replace('/'), 1500)
-        })
-        .catch(() => router.replace('/'))
-      return
+        .then(() => { localStorage.removeItem('lovers_cart') })
+        .catch(() => {})
+      // No redirigir - mostrar status del pedido
     }
     loadOrder()
     const channel = supabase.channel(`order_${id}`)
@@ -139,6 +137,29 @@ export default function OrderTrackingPage() {
 
       <main style={{ maxWidth: '520px', margin: '0 auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
+
+        {/* Banner pago exitoso */}
+        {pagoStatus === 'exitoso' && (
+          <div style={{ background: '#ECFDF5', border: '2px solid #10B981', borderRadius: '20px', padding: '20px', textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', marginBottom: '8px' }}>🎉</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: '#065F46', margin: '0 0 6px' }}>¡Pago exitoso!</h2>
+            <p style={{ color: '#059669', fontSize: '13px', margin: 0 }}>Tu pedido fue confirmado. Te notificaremos cuando esté listo.</p>
+          </div>
+        )}
+
+        {/* Boton de pago MIO */}
+        {mioUrl && !pagoStatus && (
+          <div style={{ background: 'white', border: '2px solid ' + brandColor, borderRadius: '20px', padding: '24px', textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>💳</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: '#0D0F12', margin: '0 0 8px' }}>Tu pedido está listo</h2>
+            <p style={{ color: '#6B7280', fontSize: '13px', margin: '0 0 20px' }}>Completa el pago para que podamos preparar tu orden</p>
+            <a href={mioUrl}
+              style={{ display: 'block', width: '100%', padding: '18px', borderRadius: '16px', border: 'none', background: brandColor, color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box' }}>
+              🔒 Pagar {order ? formatRD(order.total_pagado) : ''}
+            </a>
+            <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '12px 0 0' }}>🔒 Pago seguro — cuando termines regresa aquí para ver tu status</p>
+          </div>
+        )}
 
         {/* Status card */}
         {!isCancelled && !isPending ? (
