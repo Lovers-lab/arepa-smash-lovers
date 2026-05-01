@@ -207,13 +207,7 @@ export default function MenuPage() {
   }
 
   // Escuchar cambios en tiempo real en loyalty_balances
-  // Recargar puntos cada vez que el componente se monta
-  useEffect(() => {
-    const stored = localStorage.getItem('lovers_user')
-    if (!stored) return
-    const u = JSON.parse(stored)
-    loadLoyalty(u.id)
-  }, [])
+
 
   useEffect(() => {
     const stored = localStorage.getItem('lovers_user')
