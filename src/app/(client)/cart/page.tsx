@@ -49,7 +49,7 @@ export default function CartPage() {
 
   async function loadZona() {
     try {
-      const res = await fetch('/api/delivery-zones/active')
+      const res = await fetch('/api/delivery-zones/active', { cache: 'no-store' })
       const data = await res.json()
       if (data?.envio_gratis_umbral) setUmbralGratis(data.envio_gratis_umbral)
       if (data?.precio_envio) setPrecioEnvio(data.precio_envio)
