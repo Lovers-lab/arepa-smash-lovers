@@ -199,8 +199,41 @@ export default function CartPage() {
             </span>
           </div>
           {envio > 0 && (
-            <div style={{ background:'#F7F8FA', borderRadius:'10px', padding:'8px 12px', fontSize:'12px', color:'#9CA3AF', marginBottom:'8px' }}>
-              Agrega {formatRD(umbralGratis - totalPagar)} más para envío gratis
+            <div style={{ marginBottom:'12px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
+                <span style={{ fontSize:'11px', fontWeight:600, color:'#9CA3AF' }}>
+                  Agrega <span style={{ color:brandColor, fontWeight:800 }}>{formatRD(umbralGratis - totalPagar)}</span> más para envío gratis
+                </span>
+                <span style={{ fontSize:'11px', fontWeight:700, color:'#9CA3AF' }}>{formatRD(umbralGratis)}</span>
+              </div>
+              <div style={{ position:'relative', height:'22px', background:'#F3F4F6', borderRadius:'999px', overflow:'visible' }}>
+                <div style={{
+                  position:'absolute', left:0, top:0, height:'100%',
+                  width: Math.min(100, (totalPagar / umbralGratis) * 100) + '%',
+                  background: 'linear-gradient(90deg, ' + brandColor + 'CC, ' + brandColor + ')',
+                  borderRadius:'999px',
+                  transition:'width 0.5s ease',
+                  boxShadow: '0 2px 8px ' + brandColor + '40',
+                }} />
+                <div style={{
+                  position:'absolute',
+                  left: 'calc(' + Math.min(94, (totalPagar / umbralGratis) * 100) + '% - 2px)',
+                  top:'50%',
+                  transform:'translateY(-50%)',
+                  fontSize:'18px',
+                  transition:'left 0.5s ease',
+                  zIndex:2,
+                }}>🛵</div>
+                <div style={{
+                  position:'absolute', right:0, top:'-3px',
+                  width:'3px', height:'28px',
+                  background:'#D1D5DB',
+                  borderRadius:'2px',
+                }} />
+              </div>
+              <div style={{ display:'flex', justifyContent:'flex-end', marginTop:'4px' }}>
+                <span style={{ fontSize:'10px', color:'#10B981', fontWeight:700 }}>🎉 Envío gratis</span>
+              </div>
             </div>
           )}
           <div style={{ borderTop:'1.5px solid #F3F4F6', paddingTop:'12px', display:'flex', justifyContent:'space-between', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'19px' }}>
