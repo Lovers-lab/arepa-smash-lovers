@@ -29,6 +29,8 @@ export default function CartPage() {
   const [brandColor, setBrandColor] = useState('#C41E3A')
   const [hasGift, setHasGift] = useState(false)
   const [giftNombre, setGiftNombre] = useState('')
+  const [umbralGratis, setUmbralGratis] = useState(500)
+  const [precioEnvio, setPrecioEnvio] = useState(99)
 
   useEffect(() => {
     const storedMarca = localStorage.getItem('lovers_marca') as Marca || 'AREPA'
@@ -42,7 +44,17 @@ export default function CartPage() {
     const userId = JSON.parse(storedUser).id
     loadLoyalty(userId)
     checkGift(userId, storedMarca)
+    loadZona()
   }, [])
+
+  async function loadZona() {
+    try {
+      const res = await fetch('/api/delivery-zones/active')
+      const data = await res.json()
+      if (data?.envio_gratis_umbral) setUmbralGratis(data.envio_gratis_umbral)
+      if (data?.precio_envio) setPrecioEnvio(data.precio_envio)
+    } catch {}
+  }
 
   async function loadLoyalty(userId: string) {
     const res = await fetch(`/api/loyalty/balance?userId=${userId}`)
@@ -70,7 +82,7 @@ export default function CartPage() {
   const subtotal = items.reduce((a, i) => a + (i.product.precio + (i.totalExtras || 0)) * i.cantidad, 0)
   const loyaltyDesc = usarLoyalty ? Math.min(loyaltySaldo, subtotal) : 0
   const totalPagar = subtotal - loyaltyDesc
-  const envio = totalPagar >= 500 ? 0 : 99
+  const envio = totalPagar >= umbralGratis ? 0 : precioEnvio
   const total = totalPagar + envio
 
   function toggleLoyalty(val: boolean) {
@@ -188,7 +200,7 @@ export default function CartPage() {
           </div>
           {envio > 0 && (
             <div style={{ background:'#F7F8FA', borderRadius:'10px', padding:'8px 12px', fontSize:'12px', color:'#9CA3AF', marginBottom:'8px' }}>
-              Agrega {formatRD(500 - totalPagar)} más para envío gratis
+              Agrega {formatRD(umbralGratis - totalPagar)} más para envío gratis
             </div>
           )}
           <div style={{ borderTop:'1.5px solid #F3F4F6', paddingTop:'12px', display:'flex', justifyContent:'space-between', fontFamily:'var(--font-display)', fontWeight:800, fontSize:'19px' }}>
