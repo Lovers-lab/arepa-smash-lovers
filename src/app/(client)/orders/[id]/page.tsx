@@ -56,25 +56,40 @@ export default function OrderTrackingPage() {
   // Countdown de 15 minutos para pago con tarjeta
   useEffect(() => {
     if (!mioUrl || pagoStatus) return
-    const checkExpiry = async () => {
-      if (!id) return
-      const res = await fetch('/api/orders/expire', {
+    // Calcular tiempo restante basado en fecha de creacion de la orden
+    const calcularRestante = () => {
+      if (!order) return 15 * 60
+      const fechaOrden = new Date((order as any).fecha_orden).getTime()
+      const expira = fechaOrden + 15 * 60 * 1000
+      const restante = Math.max(0, Math.floor((expira - Date.now()) / 1000))
+      return restante
+    }
+    const inicial = calcularRestante()
+    if (inicial <= 0) {
+      // Ya expiró - marcar y recargar
+      fetch('/api/orders/expire', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: id }),
-      })
-      const data = await res.json()
-      if (data.expired) loadOrder()
+      }).then(() => loadOrder())
+      return
     }
-    checkExpiry()
+    setCountdown(inicial)
     const timer = setInterval(() => {
       setCountdown(prev => {
-        if (prev === null) return 15 * 60
-        if (prev <= 1) { checkExpiry(); clearInterval(timer); return 0 }
+        if (prev === null || prev <= 1) {
+          clearInterval(timer)
+          // Expirar la orden y recargar
+          fetch('/api/orders/expire', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: id }),
+          }).then(() => loadOrder())
+          return 0
+        }
         return prev - 1
       })
     }, 1000)
-    setCountdown(15 * 60)
     return () => clearInterval(timer)
   }, [mioUrl, pagoStatus])
 
